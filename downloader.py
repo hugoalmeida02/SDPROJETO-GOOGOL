@@ -2,8 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 from url_queue import URLQueue
 from urllib.parse import urljoin
-import sqlite3
-import json
 from storage import Storage
 
 
@@ -56,4 +54,4 @@ def crawl(seed_url, max_pages=10):
 
 if __name__ == "__main__":
     start_url = "https://www.wikipedia.org"
-    crawl(start_url, 5)
+    crawl(start_url, 10)

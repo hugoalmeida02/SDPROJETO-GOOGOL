@@ -141,7 +141,7 @@ if __name__ == "__main__":
         "links": ["https://www.wikipedia.org"]
     }
     
-    data2 = {
+    data3 = {
         "url": "https://pt.aaaaa.org",
         "title": "Wikipedia Portugal",
         "text": "Artigos wikipedia enciclopédicos de Portugal.",
@@ -150,6 +150,7 @@ if __name__ == "__main__":
 
     storage.add_entry(data1)
     storage.add_entry(data2)
+    storage.add_entry(data3)
 
     print("Resultados para 'enciclopédicos':", storage.search("enciclopédicos"))
     print("Resultados para 'wikipedia':", storage.search("wikipedia"))
