@@ -3,7 +3,7 @@ import queue
 class URLQueue:
     def __init__(self):
         self.q = queue.Queue()
-        self.visited = set()
+        self.visited = set()  # Guarda os URLs já processados
 
     def add_url(self, url):
         """Adiciona um URL à fila se ainda não foi visitado."""
@@ -12,9 +12,11 @@ class URLQueue:
             self.visited.add(url)
 
     def get_url(self):
-        """Obtém o próximo URL da fila (ou None se estiver vazia)."""
+        """Obtém o próximo URL da fila e marca-o como visitado (ou None se estiver vazia)."""
         if not self.q.empty():
-            return self.q.get()
+            url = self.q.get()
+            self.visited.add(url)  # Marca como visitado
+            return url
         return None
 
     def is_empty(self):
