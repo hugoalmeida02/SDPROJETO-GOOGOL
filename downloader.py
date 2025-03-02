@@ -4,7 +4,7 @@ from url_queue import URLQueue
 from urllib.parse import urljoin
 import sqlite3
 import json
-from storage import *
+from storage import Storage
 
 
 def download_page(url):
@@ -25,11 +25,12 @@ def download_page(url):
         return None
 
 
-def crawl(seed_url, cursor, max_pages=10):
+def crawl(seed_url, max_pages=10):
     queue = URLQueue()
+    storage = Storage()
     queue.add_url(seed_url)
     pages_crawled = 0
-
+    queue.add_url(seed_url)
     while not queue.is_empty() and pages_crawled < max_pages:
         url = queue.get_url()
         if not url:
@@ -38,18 +39,21 @@ def crawl(seed_url, cursor, max_pages=10):
         print(f"[{pages_crawled+1}] A processar: {url}")
         data = download_page(url)
 
+        # Verifica se o URL já está na base de dados
+        if storage.get_entry(url):
+            print(f"Já existe na base de dados: {url}")
+            continue
+
         if data:
+            storage.add_entry(data)
             for links in data["links"]:
                 queue.add_url(links)
             pages_crawled += 1
-            add_entry(cursor, data)
+    
+    storage.close()
             
 
 
 if __name__ == "__main__":
-    conn = sqlite3.connect('dados.db')
-    cursor = conn.cursor()
-
     start_url = "https://www.wikipedia.org"
-    crawl(start_url, cursor, 5)
-    conn.commit()
+    crawl(start_url, 5)
