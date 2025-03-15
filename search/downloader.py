@@ -36,6 +36,7 @@ def run():
     while True:
         try:
             try:
+                
                 response = gateway_stub.takeNext(empty_pb2.Empty())  # Pede um URL da fila
                 url = response.url
                 
@@ -48,7 +49,6 @@ def run():
                     # Fetch webpage using requests and parse with BeautifulSoup
                     response = requests.get(url)
                     response.raise_for_status()  # Raise an exception for bad status codes
-                    soup = jsoup(response.text, 'html.parser')
                     
                     words = extract_words(response.text)
                     links = extract_links(response.text, url)
@@ -61,18 +61,20 @@ def run():
                         next_servers = SERVERS.copy()
                         try:
                             with grpc.insecure_channel(server) as channel:
+                                print(f"Connectado server {server}")
                                 index_stub = index_pb2_grpc.IndexStub(channel)
                                 for word in words:
                                     index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
                             break 
                         except grpc.RpcError as e:
+                            print(f"erro server {server}")
                             next_servers.remove(server)
                             server_index = (server_index + 1) % len(next_servers)
                             continue
                     
                     for link in links:
                         gateway_stub.putNew(index_pb2.PutNewRequest(url=link))
-
+                    time.sleep(200)
                 except requests.RequestException as e:
                     print(f"Error fetching webpage: {e}")
                 

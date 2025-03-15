@@ -10,7 +10,7 @@ service Index {
     rpc putNew (PutNewRequest) returns (google.protobuf.Empty);
     rpc addToIndex (AddToIndexRequest) returns (google.protobuf.Empty);
     rpc searchWord (SearchWordRequest) returns (SearchWordResponse);
-    rpc getStats (google.protobuf.Empty) returns (StatsResponse);
+    rpc getFullIndex (google.protobuf.Empty) returns (FullIndexResponse);
 }
 
 message PutNewRequest {
@@ -35,10 +35,12 @@ message TakeNextResponse {
     string url = 1;
 }
 
-message StatsResponse {
-    int32 total_urls = 1;
-    int32 total_words = 2;
-    int32 memory_usage = 3;
-    int32 pages_per_second = 4;
+message FullIndexResponse {
+    repeated IndexEntry entries = 1;
+}
+
+message IndexEntry {
+    string palavra = 1;
+    string url = 2;
 }
 

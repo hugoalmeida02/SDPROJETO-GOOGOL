@@ -5,108 +5,161 @@ import index_pb2_grpc
 from google.protobuf import empty_pb2
 import threading
 import time
-import psutil  # Para obter estatísticas de memória
-import json
-import sys
+import sqlite3
 import argparse
 from gateway import url_queue
+import queue
 
-SAVE_INTERVAL = 10 
+SAVE_INTERVAL = 10
 REPLICAS = ["localhost:8183", "localhost:8184"]
+
 
 class IndexServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, port):
         self.port = port
-        self.index_file = f"index_data_{port}.json"
-        self.indexedItems = {}
         self.lock = threading.Lock()
-        self.pending_updates = []  # Lista de updates pendentes (para reenvio)
-        
-        self.load_index()  # Carregar índice persistido
+        self.pending_updates = queue.Queue()
+        self.db_file = f"index_barrel_{port}.db"
+        self.setup_database()
 
-        # Thread separada para salvar periodicamente
-        self.save_thread = threading.Thread(target=self.auto_save, daemon=True)
-        self.save_thread.start()
-    
-    def save_index(self):
-        with self.lock:
-            with open(self.index_file, "w") as f:
-                json.dump({k: list(v) for k, v in self.indexedItems.items()}, f)
-    
-    def auto_save(self):
-        """Thread separada que salva o índice periodicamente"""
-        while True:
-            time.sleep(SAVE_INTERVAL)
-            self.save_index()
-    
-    def load_index(self):
-        try:
-            with open(self.index_file, "r") as f:
-                data = json.load(f)
-                self.indexedItems = {k: set(v) for k, v in data.items()}
-            print("Índice carregado do disco.")
-        except FileNotFoundError:
-            print("Nenhum índice salvo encontrado. Criando novo índice.")
-        except Exception as e:
-            print(f"Erro ao carregar índice: {e}")
-        
-    def multicast_update(self, word, url):
-        """Envia a atualização para todas as réplicas"""
+        self.sync_with_existing_replicas()
+
+    def replicate_update(self, word, url):
+        def send_update(replica):
+            if replica == f"localhost:{self.port}":
+                return
+            try:
+                with grpc.insecure_channel(replica) as channel:
+                    stub = index_pb2_grpc.IndexStub(channel)
+                    stub.addToIndex(
+                        index_pb2.AddToIndexRequest(word=word, url=url))
+            except grpc.RpcError:
+                # Guardar para tentar depois
+                self.pending_updates.put((word, url, replica))
+
+        # Criar threads para envio paralelo
+        threads = [threading.Thread(target=send_update, args=(
+            replica,)) for replica in REPLICAS]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+    def sync_with_existing_replicas(self):
+        """Sincroniza os dados ao iniciar, copiando de outro Index Barrel ativo."""
         for replica in REPLICAS:
             if replica == f"localhost:{self.port}":
                 continue  # Ignorar a própria réplica
 
             try:
+                print(f"🔄 Tentando sincronizar com {replica}...")
                 with grpc.insecure_channel(replica) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
-                    stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
+                    response = stub.getFullIndex(empty_pb2.Empty())
+
+                    # Atualiza a base de dados local com os dados recebidos
+                    with sqlite3.connect(self.db_file) as conn:
+                        cursor = conn.cursor()
+                        for entry in response.entries:
+                            cursor.execute("""
+                                INSERT OR REPLACE INTO index_data (palavra, url)
+                                VALUES (?, ?)
+                            """, (entry.palavra, entry.url))
+                        conn.commit()
+                
+                print(f"✅ Sincronização com {replica} concluída.")
+                return  # Sai do loop após a primeira sincronização bem-sucedida
+
             except grpc.RpcError:
-                self.pending_updates.append((word, url))
-    
-    def retry_pending_updates(self):
-        """Reenvia updates falhados periodicamente"""
+                print(f"⚠️ Falha ao sincronizar com {replica}. Tentando outro servidor...")
+
+        print("❌ Nenhuma réplica disponível para sincronização. Iniciando vazio.")
+        
+
+    def process_pending_updates(self):
         while True:
             time.sleep(5)  # Tentar reenviar a cada 5 segundos
-            for word, url in list(self.pending_updates):  # Copia para evitar modificações durante o loop
-                self.multicast_update(word, url)
-                self.pending_updates.remove((word, url))  # Remove da lista se bem-sucedido
-    
+            if not self.pending_updates.empty():
+                word, url, replica = self.pending_updates.get()
+                self.replicate_update(word, url)  # Tenta reenviar a mensagem
+
+    def setup_database(self):
+        """Cria as tabelas se ainda não existirem."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                           CREATE TABLE IF NOT EXISTS index_data (
+                            palavra TEXT,
+                            url TEXT,
+                            PRIMARY KEY (palavra, url))
+                            """)
+            
+            conn.commit()
+
     def addToIndex(self, request, context):
         with self.lock:
-            if request.word not in self.indexedItems:
-                self.indexedItems[request.word] = set() 
-            self.indexedItems[request.word].add(request.url)
-        
-        # self.multicast_update(request.word, request.url) 
-        print("ADICIONADA COM SUCESSO")   
+            with sqlite3.connect(self.db_file) as conn:
+                cursor = conn.cursor()
+
+                # Verifica se já existe a palavra para essa URL
+                cursor.execute("SELECT * FROM index_data WHERE palavra = ? AND url = ?",
+                               (request.word, request.url))
+                result = cursor.fetchone()
+
+                if not result:
+                    cursor.execute("INSERT INTO index_data (palavra, url) VALUES (?, ?)",
+                                   (request.word, request.url))
+
+                conn.commit()
+                
         return empty_pb2.Empty()
 
     def searchWord(self, request, context):
-        with self.lock:
-            if request.word not in self.indexedItems:
-                urls = []
-            else:
-                urls = list(self.indexedItems[request.word])
-            
+        """Busca URLs para uma palavra, ordenados por frequência."""
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT url FROM index_data
+                WHERE palavra = ?
+                ORDER BY frequencia DESC
+            """, (request.word,))
+            urls = [row[0] for row in cursor.fetchall()]
+        
         return index_pb2.SearchWordResponse(urls=urls)
+    
+    def getFullIndex(self, request, context):
+        """Envia todo o índice para um novo servidor que está a sincronizar."""
+        
+        response = index_pb2.FullIndexResponse()
+        
+        with sqlite3.connect(self.db_file) as conn:
+            cursor = conn.cursor()
+            
+            # Enviar index_data
+            cursor.execute("SELECT palavra, url FROM index_data")
+            for palavra, url in cursor.fetchall():
+                entry = response.entries.add()
+                entry.palavra = palavra
+                entry.url = url
+                
+        return response
 
 
 def serve(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     index_service = IndexServicer(port)
     index_pb2_grpc.add_IndexServicer_to_server(index_service, server)
-    
-    threading.Thread(target=index_service.retry_pending_updates, daemon=True).start()  # Thread para reenvio
-    
-    server.add_insecure_port(f"[::]:{port}") 
+    server.add_insecure_port(f"[::]:{port}")
     server.start()
     print(f"Server started on port {port}")
-    
+
     server.wait_for_termination()
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Index Server")
-    parser.add_argument("--port", type=int, required=True, help="Porta para o servidor gRPC")
+    parser = argparse.ArgumentParser(description="Index Barrel")
+    parser.add_argument("--port", type=int, required=True,
+                        help="Porta para o servidor gRPC")
     args = parser.parse_args()
 
     serve(args.port)
