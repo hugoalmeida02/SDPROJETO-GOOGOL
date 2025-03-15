@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package search;
+
+import "google/protobuf/empty.proto";
+
+// Index service definition
+service Index {
+    rpc takeNext (google.protobuf.Empty) returns (TakeNextResponse);
+    rpc putNew (PutNewRequest) returns (google.protobuf.Empty);
+    rpc addToIndex (AddToIndexRequest) returns (google.protobuf.Empty);
+    rpc searchWord (SearchWordRequest) returns (SearchWordResponse);
+    rpc getStats (google.protobuf.Empty) returns (StatsResponse);
+}
+
+message PutNewRequest {
+    string url = 1;
+}
+
+// Messages for addToIndex method
+message AddToIndexRequest {
+    string word = 1;
+    string url = 2;
+}
+
+// Messages for searchWord method
+message SearchWordRequest {
+    string word = 1;
+}
+message SearchWordResponse {
+    repeated string urls = 1;
+}
+
+message TakeNextResponse {
+    string url = 1;
+}
+
+message StatsResponse {
+    int32 total_urls = 1;
+    int32 total_words = 2;
+    int32 memory_usage = 3;
+    int32 pages_per_second = 4;
+}
+
