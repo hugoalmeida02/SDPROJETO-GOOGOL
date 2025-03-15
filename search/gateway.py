@@ -9,37 +9,36 @@ import queue
 # Lista de servidores disponíveis
 SERVERS = [
     "localhost:8183",
-    "localhost:8184"
+    "localhost:8184",
+    "localhost:8185",
 ]
 
 url_queue = queue.Queue()
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self):
-        self.servers = SERVERS
-
-    def choose_server(self):
-        """Escolhe um servidor de forma aleatória (Round-Robin pode ser implementado aqui)"""
-        return random.choice(self.servers)
-
-    def putNew(self, request, context):
-        """Encaminha um pedido de novo URL para um servidor disponível"""
-        server = self.choose_server()
-        with grpc.insecure_channel(server) as channel:
-            stub = index_pb2_grpc.IndexStub(channel)
-            stub.putNew(index_pb2.PutNewRequest(url=request.url))
-            print(f"URL '{request.url}' adicionada para indexação.")
-            return empty_pb2.Empty()
+        pass
 
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         results = set()
-        for server in self.servers:
-            with grpc.insecure_channel(server) as channel:
-                stub = index_pb2_grpc.IndexStub(channel)
-                response = stub.searchWord(request)
-                results.update(response.urls)
+        
+        server_index = random.randint(0, len(SERVERS) - 1)
 
+        while True:
+            server = SERVERS[server_index]
+            next_servers = SERVERS.copy()
+            try:
+                with grpc.insecure_channel(server) as channel:
+                    stub = index_pb2_grpc.IndexStub(channel)
+                    response = stub.searchWord(request)
+                    results.update(response.urls)
+                    break 
+            except grpc.RpcError as e:
+                next_servers.remove(server)
+                server_index = (server_index + 1) % len(next_servers)
+                continue
+        
         return index_pb2.SearchWordResponse(urls=list(results))
 
     def takeNext(self, request, context):
