@@ -1,21 +1,22 @@
 import grpc
 import index_pb2
+from google.protobuf import empty_pb2
 import index_pb2_grpc
 from concurrent import futures
 import random
-import threading
+import queue
 
 # Lista de servidores disponíveis
 SERVERS = [
     "localhost:8183",
-    "localhost:8184",
-    "localhost:8185"
+    "localhost:8184"
 ]
+
+url_queue = queue.Queue()
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self):
         self.servers = SERVERS
-        self.lock = threading.Lock()
 
     def choose_server(self):
         """Escolhe um servidor de forma aleatória (Round-Robin pode ser implementado aqui)"""
@@ -26,14 +27,9 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         server = self.choose_server()
         with grpc.insecure_channel(server) as channel:
             stub = index_pb2_grpc.IndexStub(channel)
-            return stub.putNew(request)
-
-    def addToIndex(self, request, context):
-        """Encaminha a indexação de uma palavra para um servidor aleatório"""
-        server = self.choose_server()
-        with grpc.insecure_channel(server) as channel:
-            stub = index_pb2_grpc.IndexStub(channel)
-            return stub.addToIndex(request)
+            stub.putNew(index_pb2.PutNewRequest(url=request.url))
+            print(f"URL '{request.url}' adicionada para indexação.")
+            return empty_pb2.Empty()
 
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
@@ -45,6 +41,15 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 results.update(response.urls)
 
         return index_pb2.SearchWordResponse(urls=list(results))
+
+    def takeNext(self, request, context):
+        url = url_queue.get()
+        return index_pb2.TakeNextResponse(url=url)
+    
+    def putNew(self, request, context):
+        url_queue.put(request.url)
+        print(f"Added URL to index: {request.url}")
+        return empty_pb2.Empty()
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
