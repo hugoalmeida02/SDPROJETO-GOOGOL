@@ -46,7 +46,6 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             thread.join()
 
     def sync_with_existing_replicas(self):
-        """Sincroniza os dados ao iniciar, copiando de outro Index Barrel ativo."""
         for replica in REPLICAS:
             if replica == f"localhost:{self.port}":
                 continue  # Ignorar a própria réplica

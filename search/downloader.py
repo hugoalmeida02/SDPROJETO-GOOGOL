@@ -74,7 +74,7 @@ def run():
                     
                     for link in links:
                         gateway_stub.putNew(index_pb2.PutNewRequest(url=link))
-                    time.sleep(200)
+                        
                 except requests.RequestException as e:
                     print(f"Error fetching webpage: {e}")
                 
