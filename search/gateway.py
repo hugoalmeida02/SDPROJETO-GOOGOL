@@ -19,6 +19,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self):
         pass
 
+    def registerIndexBarrel(self, request):
+        
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         results = set()

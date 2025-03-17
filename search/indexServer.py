@@ -7,7 +7,6 @@ import threading
 import time
 import sqlite3
 import argparse
-from gateway import url_queue
 import queue
 
 SAVE_INTERVAL = 10
@@ -157,8 +156,8 @@ def serve(port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Index Barrel")
-    parser.add_argument("--port", type=int, required=True,
+    parser.add_argument("--ip", type=int, required=True,
                         help="Porta para o servidor gRPC")
     args = parser.parse_args()
 
-    serve(args.port)
+    serve(args.ip)
