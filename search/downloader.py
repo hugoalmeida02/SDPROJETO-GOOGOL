@@ -8,11 +8,7 @@ import re
 import time
 import random
 
-SERVERS = [
-    "localhost:8183",
-    "localhost:8184",
-    "localhost:8185"
-]
+SERVERS = []
 
 def extract_words(html):
     soup = jsoup(html, 'html.parser')
@@ -30,14 +26,16 @@ def extract_links(html, base_url):
     return links
 
 def run():
-    gateway_channel = grpc.insecure_channel('localhost:8190')  # Conectar à Gateway
+    url_queue_channel = grpc.insecure_channel('localhost:8180')  # Conectar à queue
+    url_queue_stub = index_pb2_grpc.IndexStub(url_queue_channel)
+    gateway_channel = grpc.insecure_channel('localhost:8190')  # Conectar à gateway
     gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
 
     while True:
         try:
             try:
                 
-                response = gateway_stub.takeNext(empty_pb2.Empty())  # Pede um URL da fila
+                response = url_queue_stub.takeNext(empty_pb2.Empty())  # Pede um URL da fila
                 url = response.url
                 
                 if not url:
@@ -53,28 +51,40 @@ def run():
                     words = extract_words(response.text)
                     links = extract_links(response.text, url)
                     
-                    
-                    server_index = random.randint(0, len(SERVERS) - 1)
-
                     while True:
-                        server = SERVERS[server_index]
-                        next_servers = SERVERS.copy()
-                        try:
-                            with grpc.insecure_channel(server) as channel:
-                                print(f"Connectado server {server}")
-                                index_stub = index_pb2_grpc.IndexStub(channel)
-                                for word in words:
-                                    index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
-                            break 
-                        except grpc.RpcError as e:
-                            print(f"erro server {server}")
-                            next_servers.remove(server)
-                            server_index = (server_index + 1) % len(next_servers)
-                            continue
+                        response = gateway_stub.getIndexBarrels(empty_pb2.Empty())
+                        for server in response.indexInfos:
+                            if server not in SERVERS:
+                                SERVERS.append(server)
+                                
+                        if len(SERVERS) != 0:
+                            server_index = random.randint(0, len(SERVERS) - 1)
+
+                            while True:
+                                server = SERVERS[server_index]
+                                next_servers = SERVERS.copy()
+                                try:
+                                    with grpc.insecure_channel(server) as channel:
+                                        print(f"Connectado server {server}")
+                                        index_stub = index_pb2_grpc.IndexStub(channel)
+                                        for word in words:
+                                            index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
+                                    break 
+                                except grpc.RpcError as e:
+                                    print(f"erro server {server}")
+                                    next_servers.remove(server)
+                                    server_index = (server_index + 1) % len(next_servers)
+                                    continue
+                            
+                            for link in links:
+                                url_queue_stub.putNew(index_pb2.PutNewRequest(url=link))
+                                
+                            break
+                        else:
+                            print("Nenhum Index Barrel disponivel")
+                            time.sleep(10)
                     
-                    for link in links:
-                        gateway_stub.putNew(index_pb2.PutNewRequest(url=link))
-                        
+                    
                 except requests.RequestException as e:
                     print(f"Error fetching webpage: {e}")
                 

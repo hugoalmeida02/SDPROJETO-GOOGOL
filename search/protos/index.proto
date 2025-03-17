@@ -12,6 +12,7 @@ service Index {
     rpc searchWord (SearchWordRequest) returns (SearchWordResponse);
     rpc getFullIndex (google.protobuf.Empty) returns (FullIndexResponse);
     rpc registerIndexBarrel (IndexBarrelRequest) returns (ValidRegister);
+    rpc getIndexBarrels (google.protobuf.Empty) returns (IndexBarrelInfo);
 }
 
 message PutNewRequest {
@@ -52,3 +53,8 @@ message IndexBarrelRequest {
 message ValidRegister{
     bool valid = 1;
 }
+
+message IndexBarrelInfo{
+    repeated string indexInfos = 1;
+}
+
