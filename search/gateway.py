@@ -24,8 +24,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
     def getIndexBarrels(self, request, context):
         return index_pb2.IndexBarrelInfo(indexInfos=SERVERS)
 
-    
-    
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         results = set()

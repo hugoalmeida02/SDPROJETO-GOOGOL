@@ -6,27 +6,28 @@ from google.protobuf import empty_pb2
 import threading
 import argparse
 import queue
-import sqlite3
+import os
+import json
+import time
 
-SAVE_INTERVAL = 10
-REPLICAS = ["localhost:8183", "localhost:8184"]
-
+SAVE_INTERVAL = 2
+REPLICAS = []
 
 class IndexServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, port):
         self.port = port
         self.lock = threading.Lock()
         self.pending_updates = queue.Queue()
-        self.db_file = f"index_barrel_{port}.db"
-        self.setup_database()
-        # self.sync_with_existing_replicas()
+        self.index_file = f"index_data_{port}.json"
+        self.load_data()
         
-
+        threading.Thread(target=self.auto_save, daemon=True).start()
+        
     def registerIndex(self):
         gateway_channel = grpc.insecure_channel("localhost:8190")
-        gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
+        self.gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
         try:
-            response = gateway_stub.registerIndexBarrel(index_pb2.IndexBarrelRequest(ip=f"localhost:{self.port}"))
+            response = self.gateway_stub.registerIndexBarrel(index_pb2.IndexBarrelRequest(ip=f"localhost:{self.port}"))
             if response.valid:
                 print("Server registado com sucesso")
                 return True
@@ -36,73 +37,64 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         except grpc.RpcError:
             print("Erro ao registar server. Gateway indisponivel")
             return False
+    
+    def load_data(self):
+        """Carrega os dados do ficheiro JSON ou cria ficheiro vazio se não existir."""
+        # Carregar dados do ficheiro de index, ou criar se não existir
+        if os.path.exists(self.index_file):
+            with open(self.index_file, "r") as f:
+                self.index_data = json.load(f)
+            print(f"✅ Dados carregados do ficheiro {self.index_file}")
+        else:
+            # Se o ficheiro não existir, cria um ficheiro vazio
+            with open(self.index_file, "w") as f:
+                json.dump({}, f)
+            print(f"⚠️ Ficheiro {self.index_file} não encontrado. Criado um novo ficheiro vazio.")
+            self.index_data = {}
+
+    def save_data(self):
+        """Guarda os dados no ficheiro JSON."""
+        with self.lock:
+            with open(self.index_file, "w") as f:
+                json.dump(self.index_data, f, indent=2)
+    
+    
+    def auto_save(self):
+        """Guarda periodicamente os dados em ficheiros JSON."""
+        while True:
+            time.sleep(SAVE_INTERVAL)
+            self.save_data() 
             
-            
-    # def replicate_update(self, word, url):
-    #     def send_update(replica):
-    #         if replica == f"localhost:{self.port}":
-    #             return
-    #         try:
-    #             with grpc.insecure_channel(replica) as channel:
-    #                 stub = index_pb2_grpc.IndexStub(channel)
-    #                 stub.addToIndex(
-    #                     index_pb2.AddToIndexRequest(word=word, url=url))
-    #         except grpc.RpcError:
-    #             # Guardar para tentar depois
-    #             self.pending_updates.put((word, url, replica))
-
-    #     # Criar threads para envio paralelo
-    #     threads = [threading.Thread(target=send_update, args=(
-    #         replica,)) for replica in REPLICAS]
-    #     for thread in threads:
-    #         thread.start()
-    #     for thread in threads:
-    #         thread.join()
-
-    # def sync_with_existing_replicas(self):
-    #     gateway_channel = grpc.insecure_channel("localhost:8190")
-    #     gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
-    #     try:
-    #         response = gateway_stub.getIndexBarrels(index_pb2.IndexBarrelRequest(ip=f"localhost:{self.port}"))
-    #         if response.valid:
-    #             print("Server registado com sucesso")
-    #             return True
-    #         else:
-    #             print("Nao foi possivel registar server")
-    #             return False
-    #     except grpc.RpcError:
-    #         print("Erro ao registar server. Gateway indisponivel")
-    #         return False
-    #     REPLICAS = 
+    
+    def sync_with_existing_replicas(self):
+        """Sincroniza com outros Index Barrels quando inicia."""
         
+        response = self.gateway_stub.getIndexBarrels(empty_pb2.Empty())
         
-    #     for replica in REPLICAS:
-    #         if replica == f"localhost:{self.port}":
-    #             continue  # Ignorar a própria réplica
-
-    #         try:
-    #             print(f"🔄 Tentando sincronizar com {replica}...")
-    #             with grpc.insecure_channel(replica) as channel:
-    #                 stub = index_pb2_grpc.IndexStub(channel)
-    #                 response = stub.getFullIndex(empty_pb2.Empty())
-
-    #                 # Atualiza a base de dados local com os dados recebidos
-    #                 with sqlite3.connect(self.db_file) as conn:
-    #                     cursor = conn.cursor()
-    #                     for entry in response.entries:
-    #                         cursor.execute("""
-    #                             INSERT OR REPLACE INTO index_data (palavra, url)
-    #                             VALUES (?, ?)
-    #                         """, (entry.palavra, entry.url))
-    #                     conn.commit()
+        for server in response.indexInfos:
+            if server not in REPLICAS:
+                REPLICAS.append(server)
                 
-    #             print(f"✅ Sincronização com {replica} concluída.")
-    #             return  # Sai do loop após a primeira sincronização bem-sucedida
+        for replica in REPLICAS:
+            if replica == f"localhost:{self.port}":
+                continue
+            try:
+                print(f"🔄 Tentando sincronizar com {replica}...")
+                with grpc.insecure_channel(replica) as channel:
+                    stub = index_pb2_grpc.IndexStub(channel)
+                    response = stub.getFullIndex(empty_pb2.Empty())
+                    with self.lock:
+                        for entry in response.entries:
+                            if entry.palavra not in self.index_data:
+                                self.index_data[entry.palavra] = {}
+                            self.index_data[entry.palavra][entry.url] = entry.frequencia
+                            
+                print(f"✅ Sincronização com {replica} concluída.")
+                return  
+            except grpc.RpcError:
+                print(f"⚠️ Falha ao sincronizar com {replica}")
 
-    #         except grpc.RpcError:
-    #             print(f"⚠️ Falha ao sincronizar com {replica}. Tentando outro servidor...")
-
-    #     print("❌ Nenhuma réplica disponível para sincronização. Iniciando vazio.")
+        print("❌ Nenhuma réplica disponível. Iniciando vazio.")
         
 
     # def process_pending_updates(self):
@@ -112,66 +104,37 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
     #             word, url, replica = self.pending_updates.get()
     #             self.replicate_update(word, url)  # Tenta reenviar a mensagem
 
-    def setup_database(self):
-        """Cria as tabelas se ainda não existirem."""
-        with sqlite3.connect(self.db_file) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                           CREATE TABLE IF NOT EXISTS index_data (
-                            palavra TEXT,
-                            url TEXT,
-                            PRIMARY KEY (palavra, url))
-                            """)
-            
-            conn.commit()
-            conn.close()
-
     def addToIndex(self, request, context):
-        
+        """Adiciona uma palavra e URL ao índice e replica para outras réplicas."""
         with self.lock:
-            with sqlite3.connect(self.db_file) as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute("SELECT * FROM index_data WHERE palavra = ? AND url = ?",
-                               (request.word, request.url))
-                result = cursor.fetchone()
-                print(result)
-                if not result:
-                    cursor.execute("INSERT INTO index_data (palavra, url) VALUES (?, ?)",
-                                   (request.word, request.url))
+            if request.word not in self.index_data:
+                self.index_data[request.word] = {}
+            if request.url in self.index_data[request.word]:
+                self.index_data[request.word][request.url] += 1
+            else:
+                self.index_data[request.word][request.url] = 1
 
-                conn.commit()
-                
+        #threading.Thread(target=self.replicate_update, args=(request.word, request.url), daemon=True).start()
         return empty_pb2.Empty()
+
 
     def searchWord(self, request, context):
         """Busca URLs para uma palavra, ordenados por frequência."""
-        with sqlite3.connect(self.db_file) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT url FROM index_data
-                WHERE palavra = ?
-                ORDER BY frequencia DESC
-            """, (request.word,))
-            urls = [row[0] for row in cursor.fetchall()]
-        return index_pb2.SearchWordResponse(urls=urls)
-    
+        with self.lock:
+            urls = sorted(self.index_data.get(request.word, {}).items(), key=lambda x: x[1], reverse=True)
+        return index_pb2.SearchWordResponse(urls=[url[0] for url in urls])
+
     def getFullIndex(self, request, context):
+        
         """Envia todo o índice para um novo servidor que está a sincronizar."""
-        
-        response = index_pb2.FullIndexResponse()
-        
-        with sqlite3.connect(self.db_file) as conn:
-            cursor = conn.cursor()
-            
-            # Enviar index_data
-            cursor.execute("SELECT palavra, url FROM index_data")
-            for palavra, url in cursor.fetchall():
-                entry = response.entries.add()
-                entry.palavra = palavra
-                entry.url = url
-                
-        return response
+        with self.lock:
+            entries = []
+            for palavra, urls in self.index_data.items():
+                for url, frequencia in urls.items(): 
+                    entry = index_pb2.IndexEntry(palavra=palavra, url=url, frequencia=frequencia)
+                entries.append(entry)
+                    
+        return index_pb2.FullIndexResponse(entries=entries)
 
 
 def serve(port):
@@ -179,6 +142,7 @@ def serve(port):
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         index_service = IndexServicer(port)
         if index_service.registerIndex():
+            index_service.sync_with_existing_replicas()
             index_pb2_grpc.add_IndexServicer_to_server(index_service, server)
             server.add_insecure_port(f"[::]:{port}")
             server.start()

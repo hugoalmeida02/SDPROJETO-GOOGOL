@@ -62,7 +62,6 @@ def run():
 
                             while True:
                                 server = SERVERS[server_index]
-                                next_servers = SERVERS.copy()
                                 try:
                                     with grpc.insecure_channel(server) as channel:
                                         print(f"Connectado server {server}")
@@ -71,9 +70,7 @@ def run():
                                             index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
                                     break 
                                 except grpc.RpcError as e:
-                                    print(f"erro server {server}")
-                                    next_servers.remove(server)
-                                    server_index = (server_index + 1) % len(next_servers)
+                                    print(f"Erro server {server}")
                                     continue
                             
                             for link in links:

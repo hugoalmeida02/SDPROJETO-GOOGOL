@@ -44,6 +44,7 @@ message FullIndexResponse {
 message IndexEntry {
     string palavra = 1;
     string url = 2;
+    int32 frequencia = 3;
 }
 
 message IndexBarrelRequest {
