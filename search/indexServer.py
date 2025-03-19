@@ -10,8 +10,10 @@ import os
 import json
 import time
 
-SAVE_INTERVAL = 2
+SAVE_INTERVAL = 5
+CHECK_REPLICAS_INTERVAL = 5
 REPLICAS = []
+
 
 class IndexServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, port):
@@ -20,8 +22,12 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         self.pending_updates = queue.Queue()
         self.index_file = f"index_data_{port}.json"
         self.load_data()
+        self.pending_updates = queue.Queue()
         
         threading.Thread(target=self.auto_save, daemon=True).start()
+        threading.Thread(target=self.process_pending_updates, daemon=True).start()
+        threading.Thread(target=self.check_replicas_periodically, daemon=True).start()
+
         
     def registerIndex(self):
         gateway_channel = grpc.insecure_channel("localhost:8190")
@@ -58,21 +64,19 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             with open(self.index_file, "w") as f:
                 json.dump(self.index_data, f, indent=2)
     
-    
     def auto_save(self):
         """Guarda periodicamente os dados em ficheiros JSON."""
         while True:
             time.sleep(SAVE_INTERVAL)
             self.save_data() 
             
-    
     def sync_with_existing_replicas(self):
         """Sincroniza com outros Index Barrels quando inicia."""
         
         response = self.gateway_stub.getIndexBarrels(empty_pb2.Empty())
         
         for server in response.indexInfos:
-            if server not in REPLICAS:
+            if server not in REPLICAS and server != f"localhost:{self.port}":
                 REPLICAS.append(server)
                 
         for replica in REPLICAS:
@@ -95,14 +99,61 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 print(f"⚠️ Falha ao sincronizar com {replica}")
 
         print("❌ Nenhuma réplica disponível. Iniciando vazio.")
-        
+    
+    def update_replicas_from_gateway(self):
+        """Obtém a lista de réplicas da Gateway."""
+        try:
+            with grpc.insecure_channel("localhost:8190") as channel:
+                stub = index_pb2_grpc.IndexStub(channel)
+                response = stub.getIndexBarrels(empty_pb2.Empty())
 
-    # def process_pending_updates(self):
-    #     while True:
-    #         time.sleep(5)  # Tentar reenviar a cada 5 segundos
-    #         if not self.pending_updates.empty():
-    #             word, url, replica = self.pending_updates.get()
-    #             self.replicate_update(word, url)  # Tenta reenviar a mensagem
+                with self.lock:
+                    REPLICAS = [replica for replica in response.indexInfos if replica != f"localhost:{self.port}"]
+        except grpc.RpcError as e:
+            print(f"⚠️ Erro ao contactar a Gateway: {e.details()}")
+    
+    
+    def check_replicas_periodically(self):
+        """Verifica periodicamente a lista de réplicas na Gateway."""
+        while True:
+            time.sleep(CHECK_REPLICAS_INTERVAL)
+            self.update_replicas_from_gateway()
+    
+    def reliable_multicast(self, word, url):
+        """Envia a atualização para todas as réplicas."""
+        def send_update(replica):
+            print(REPLICAS)
+            if replica == f"localhost:{self.port}":
+                return  # Ignorar a própria réplica
+            try:
+                with grpc.insecure_channel(replica) as channel:
+                    stub = index_pb2_grpc.IndexStub(channel)
+                    stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url, from_multicast=True))
+            except grpc.RpcError:
+                print(f"⚠️ Falha ao replicar para {replica}. Guardando para retry.")
+                self.pending_updates.put((word, url, replica))  # Adiciona à fila
+
+        # Criar threads para enviar atualizações em paralelo
+        threads = [threading.Thread(target=send_update, args=(replica,))for replica in REPLICAS]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()  # Esperar todas as threads terminarem
+
+    def process_pending_updates(self):
+        """Reenvia mensagens falhadas periodicamente."""
+        while True:
+            time.sleep(5)  # Tentar reenviar a cada 5 segundos
+            while not self.pending_updates.empty():
+                word, url, replica = self.pending_updates.get()
+                print(f"🔄 Reenviando atualização para {replica}: {word} -> {url}")
+                try:
+                    with grpc.insecure_channel(replica) as channel:
+                        stub = index_pb2_grpc.IndexStub(channel)
+                        stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url, from_multicast=True))
+                except grpc.RpcError:
+                    print(f"⚠️ Falha ao reenviar para {replica}. Guardando novamente.")
+                    self.pending_updates.put((word, url, replica))  # Reinsere na fila 
 
     def addToIndex(self, request, context):
         """Adiciona uma palavra e URL ao índice e replica para outras réplicas."""
@@ -114,7 +165,9 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             else:
                 self.index_data[request.word][request.url] = 1
 
-        #threading.Thread(target=self.replicate_update, args=(request.word, request.url), daemon=True).start()
+        # Apenas replica se a palavra não veio do multicast
+        if not request.from_multicast:
+            threading.Thread(target=self.reliable_multicast, args=(request.word, request.url), daemon=True).start()
         return empty_pb2.Empty()
 
 
@@ -124,8 +177,8 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             urls = sorted(self.index_data.get(request.word, {}).items(), key=lambda x: x[1], reverse=True)
         return index_pb2.SearchWordResponse(urls=[url[0] for url in urls])
 
+
     def getFullIndex(self, request, context):
-        
         """Envia todo o índice para um novo servidor que está a sincronizar."""
         with self.lock:
             entries = []

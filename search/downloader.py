@@ -67,7 +67,7 @@ def run():
                                         print(f"Connectado server {server}")
                                         index_stub = index_pb2_grpc.IndexStub(channel)
                                         for word in words:
-                                            index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url))
+                                            index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url, from_multicast=False))
                                     break 
                                 except grpc.RpcError as e:
                                     print(f"Erro server {server}")
@@ -79,7 +79,6 @@ def run():
                             break
                         else:
                             print("Nenhum Index Barrel disponivel")
-                            time.sleep(10)
                     
                     
                 except requests.RequestException as e:

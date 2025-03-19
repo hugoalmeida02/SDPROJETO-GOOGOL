@@ -23,6 +23,7 @@ message PutNewRequest {
 message AddToIndexRequest {
     string word = 1;
     string url = 2;
+    bool from_multicast = 3;
 }
 
 // Messages for searchWord method
