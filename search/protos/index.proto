@@ -4,11 +4,11 @@ package search;
 
 import "google/protobuf/empty.proto";
 
-// Index service definition
 service Index {
     rpc takeNext (google.protobuf.Empty) returns (TakeNextResponse);
     rpc putNew (PutNewRequest) returns (google.protobuf.Empty);
-    rpc addToIndex (AddToIndexRequest) returns (google.protobuf.Empty);
+    rpc addToIndexWords (AddToIndexRequestWords) returns (google.protobuf.Empty);
+    rpc addToIndexLinks (AddToIndexRequestLinks) returns (google.protobuf.Empty);
     rpc searchWord (SearchWordRequest) returns (SearchWordResponse);
     rpc getFullIndex (google.protobuf.Empty) returns (FullIndexResponse);
     rpc registerIndexBarrel (IndexBarrelRequest) returns (ValidRegister);
@@ -19,17 +19,22 @@ message PutNewRequest {
     string url = 1;
 }
 
-// Messages for addToIndex method
-message AddToIndexRequest {
+message AddToIndexRequestWords {
     string word = 1;
     string url = 2;
     bool from_multicast = 3;
 }
 
-// Messages for searchWord method
-message SearchWordRequest {
-    string word = 1;
+message AddToIndexRequestLinks {
+    string url = 1;
+    string link = 2;
+    bool from_multicast = 3;
 }
+
+message SearchWordRequest {
+    string words = 1;
+}
+
 message SearchWordResponse {
     repeated string urls = 1;
 }
@@ -39,17 +44,18 @@ message TakeNextResponse {
 }
 
 message FullIndexResponse {
-    repeated IndexEntry entries = 1;
+    repeated IndexEntry palavras = 1;
+    repeated IndexEntry urls = 2;
 }
 
 message IndexEntry {
-    string palavra = 1;
-    string url = 2;
-    int32 frequencia = 3;
+    string param0 = 1;
+    string param1 = 2;
 }
 
 message IndexBarrelRequest {
-    string ip = 1;
+    string host = 1;
+    string port = 2;
 }
 
 message ValidRegister{

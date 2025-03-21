@@ -53,6 +53,7 @@ def run():
                     
                     while True:
                         response = gateway_stub.getIndexBarrels(empty_pb2.Empty())
+                        SERVERS = []
                         for server in response.indexInfos:
                             if server not in SERVERS:
                                 SERVERS.append(server)
@@ -60,22 +61,24 @@ def run():
                         if len(SERVERS) != 0:
                             server_index = random.randint(0, len(SERVERS) - 1)
 
-                            while True:
-                                server = SERVERS[server_index]
-                                try:
-                                    with grpc.insecure_channel(server) as channel:
-                                        print(f"Connectado server {server}")
-                                        index_stub = index_pb2_grpc.IndexStub(channel)
-                                        for word in words:
-                                            index_stub.addToIndex(index_pb2.AddToIndexRequest(word=word, url=url, from_multicast=False))
-                                    break 
-                                except grpc.RpcError as e:
-                                    print(f"Erro server {server}")
-                                    continue
+                            server = SERVERS[server_index]
+                            try:
+                                with grpc.insecure_channel(server) as channel:
+                                    print(f"Connectado server {server}")
+                                    index_stub = index_pb2_grpc.IndexStub(channel)
+                                    for word in words:
+                                        index_stub.addToIndexWords(index_pb2.AddToIndexRequestWords(word=word, url=url, from_multicast=False))
+                                    print("sucesso")
+                                    for link in links:   
+                                        index_stub.addToIndexLinks(index_pb2.AddToIndexRequestLinks(url=url, link=link, from_multicast=False))
+                                        
+                                    
+                                for link in links:   
+                                    url_queue_stub.putNew(index_pb2.PutNewRequest(url=link))
+                                        
+                            except grpc.RpcError as e:
+                                print(f"Erro server {server}")
                             
-                            for link in links:
-                                url_queue_stub.putNew(index_pb2.PutNewRequest(url=link))
-                                
                             break
                         else:
                             print("Nenhum Index Barrel disponivel")

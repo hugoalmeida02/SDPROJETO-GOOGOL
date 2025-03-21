@@ -12,11 +12,11 @@ def run():
             try:
                 option = input()
                 
-                if option.startswith("https://"):
+                if option.startswith("http"):
                     stub.putNew(index_pb2.PutNewRequest(url=option))
                     
                 else:
-                    response = stub.searchWord(index_pb2.SearchWordRequest(word=option))
+                    response = stub.searchWord(index_pb2.SearchWordRequest(words=option))
                     if response.urls:
                         print(f"A palavra '{option}' foi encontrada nos seguintes URLs:")
                         for url in response.urls:
