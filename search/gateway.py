@@ -20,6 +20,9 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         self.port = "8190"
         self.url_queue = "localhost:8180"
         self.gateway_file = f"gateway_data_{self.port}.json"
+        self.search_counter = {}
+        self.response_times = {} 
+        self.index_sizes = {}
         self.load_data()
         self.lock = threading.Lock()
         
@@ -29,7 +32,11 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
     def load_data(self):
         if os.path.exists(self.gateway_file):
             with open(self.gateway_file, "r") as f:
-                self.index_barrels = json.load(f)
+                data = json.load(f)
+                self.search_counter = data.get("search_counter", {})
+                self.response_times = data.get("response_times", {})
+                self.index_sizes = data.get("index_sizes", {})
+                self.index_barrels = data.get("index_barrels", {})
             print(f"✅ Dados carregados do ficheiro {self.gateway_file}")
         else:
             # Se o ficheiro não existir, cria um ficheiro vazio
@@ -37,13 +44,22 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 json.dump({}, f)
             print(
                 f"⚠️ Ficheiro {self.gateway_file} não encontrado. Criado um novo ficheiro vazio.")
+            self.search_counter = {}
+            self.response_times = {}
+            self.index_sizes = {}
             self.index_barrels = {}
         
     def save_data(self):
         """Guarda os dados no ficheiro JSON."""
         with self.lock:
+            data = {
+                "search_counter": self.search_counter,
+                "response_times": self.response_times,
+                "index_sizes": self.index_sizes,
+                "index_barrels" : self.index_barrels
+            }
             with open(self.gateway_file, "w") as f:
-                json.dump(self.index_barrels, f, indent=2)
+                json.dump(data, f, indent=2)
                 
     def auto_save(self):
         """Guarda periodicamente os dados em ficheiros JSON."""
@@ -101,6 +117,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
+        termos = request.words.strip().lower()
+        self.search_counter[termos] = self.search_counter.get(termos, 0) + 1
         
         active_servers = [barrel for barrel in self.index_barrels.keys()]
         random.shuffle(active_servers)
@@ -108,11 +126,19 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         
         for server in active_servers:
             try:
+                start = time.time()
                 with grpc.insecure_channel(server) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
                     response = stub.searchWord(request)
                     results = response.urls
-                    break
+                duration = (time.time() - start) * 10  
+                
+                # Registar tempo
+                if server not in self.response_times:
+                    self.response_times[server] = []
+                self.response_times[server].append(duration)
+
+                break
             except grpc.RpcError as e:
                 print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
                 continue
@@ -128,11 +154,19 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         
         for server in active_servers:
             try:
+                start = time.time()
                 with grpc.insecure_channel(server) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
                     response = stub.searchBacklinks(request)
                     results = response.backlinks
-                    break
+                duration = (time.time() - start) * 10  
+                
+                # Registar tempo
+                if server not in self.response_times:
+                    self.response_times[server] = []
+                self.response_times[server].append(duration)
+                break
+            
             except grpc.RpcError as e:
                 print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
                 continue
@@ -149,6 +183,30 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             print(f"RPC error details: {e.details()}")
 
         return empty_pb2.Empty()
+    
+    def getStats(self, request, context):
+        response = index_pb2.SystemStats()
+
+        # Top 10 pesquisas
+        sorted_queries = sorted(self.search_counter.items(), key=lambda x: x[1], reverse=True)[:10]
+        for term, _ in sorted_queries:
+            response.top_queries.append(term)
+
+        # Info de cada barrel
+        for address in self.index_barrels:
+            barrel = response.barrels.add()
+            barrel.address = address
+            
+            with grpc.insecure_channel(address) as channel:
+                stub = index_pb2_grpc.IndexStub(channel)
+                index_response = stub.getFullIndex(empty_pb2.Empty())
+                self.index_sizes[address] = len(index_response.palavras)
+                
+            barrel.index_size = self.index_sizes.get(address, 0)
+            tempos = self.response_times.get(address, [])
+            barrel.avg_response_time = round(sum(tempos) / len(tempos), 3) if tempos else 0.0
+
+        return response
 
 def serve():
     try:

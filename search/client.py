@@ -32,7 +32,7 @@ def run():
                     words = input()
                     response = stub.searchWord(index_pb2.SearchWordRequest(words=words))
                     if response.urls:
-                        print(f"A palavra '{option}' foi encontrada nos seguintes URLs:")
+                        print(f"A pesquisa '{words}' foi encontrada nos seguintes URLs:")
                         paginas = [response.urls[i:i + 10] for i in range(0, len(response.urls), 10)]
                         for i, pagina in enumerate(paginas):
                             print(f"Página {i+1}:")
@@ -42,7 +42,7 @@ def run():
                                 print(f" Quote - {urls.quote}")
                                 print()
                     else:
-                        print(f"Nenhum resultado encontrado para '{option}'.")
+                        print(f"Nenhum resultado encontrado para '{words}'.")
                 elif option == "3":
                     while True:
                         url = input()
@@ -56,9 +56,19 @@ def run():
                         for backlinks in response.backlinks:
                             print(f" Url - {backlinks}")
                     else:
-                        print(f"Nenhum resultado encontrado para '{option}'.")
+                        print(f"Nenhum resultado encontrado para '{url}'.")
                 elif option == "4":
-                    print("Estatísticas")
+                    response = stub.getStats(empty_pb2.Empty())
+                    print("\nTop 10 pesquisas mais comuns:")
+                    for i, term in enumerate(response.top_queries, 1):
+                        print(f"{i}. {term}")
+
+                    if response.barrels:
+                        print("\nIndex Barrels ativos:")
+                        for barrel in response.barrels:
+                            print(f"{barrel.address} — Entradas: {barrel.index_size} — {barrel.avg_response_time:.3f} décimas")
+                    else:
+                        print("\nNenhum Index Barrels ativo.")
                 elif option == "5":
                     print("\nStopping the client...")
                     return

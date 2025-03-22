@@ -14,6 +14,7 @@ service Index {
     rpc getFullIndex (google.protobuf.Empty) returns (FullIndexResponse);
     rpc registerIndexBarrel (IndexBarrelRequest) returns (ValidRegister);
     rpc getIndexBarrels (google.protobuf.Empty) returns (IndexBarrelInfo);
+    rpc getStats(google.protobuf.Empty) returns (SystemStats);
 }
 
 message PutNewRequest {
@@ -81,5 +82,16 @@ message ValidRegister{
 
 message IndexBarrelInfo{
     repeated string indexInfos = 1;
+}
+
+message SystemStats {
+  repeated string top_queries = 1;
+  repeated BarrelStats barrels = 2;
+}
+
+message BarrelStats {
+  string address = 1;
+  int32 index_size = 2;
+  float avg_response_time = 3; // décimas de segundo
 }
 
