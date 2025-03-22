@@ -1,0 +1,22 @@
+{
+  "search_counter": {
+    "ola": 1,
+    "wikipedia": 1,
+    "portugal": 1,
+    "portugal bandeira": 1
+  },
+  "response_times": {
+    "localhost:8123": [
+      0.015926361083984375,
+      0.015385150909423828,
+      0.024983882904052734,
+      0.017383098602294922
+    ]
+  },
+  "index_sizes": {},
+  "index_barrels": {
+    "localhost:8123": {
+      "failures": 0
+    }
+  }
+}
