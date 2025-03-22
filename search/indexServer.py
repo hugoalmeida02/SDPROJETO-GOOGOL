@@ -233,6 +233,8 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         
         with self.lock:
             for word in words:
+                
+                
         # return index_pb2.SearchWordResponse(urls=[url[0] for url in urls])
 
         return index_pb2.SearchWordResponse(urls="aaaaaaa")
