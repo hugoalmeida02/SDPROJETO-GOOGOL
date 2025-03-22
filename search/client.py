@@ -2,9 +2,11 @@ import grpc
 import index_pb2
 import index_pb2_grpc
 from google.protobuf import empty_pb2
+import time
+import argparse
 
-def run():
-    channel = grpc.insecure_channel('localhost:8190')
+def run(host_gateway, port_gateway):
+    channel = grpc.insecure_channel(f"{host_gateway}:{port_gateway}")
     stub = index_pb2_grpc.IndexStub(channel)
     
     print("##### Menu Client #####")
@@ -75,12 +77,24 @@ def run():
                 else:
                     print("Opção inválida! Tenta novamente")
             except grpc.RpcError as e:
-                print(f"RPC failed: {e.code()}")
-                print(f"RPC error details: {e.details()}")
-                return
+                if e.details().startswith("WSASend: Connection reset"):
+                    time.sleep(2)
+                    print("Falha na ligação tente novamente")
+                    channel = grpc.insecure_channel(f"{host_gateway}:{port_gateway}")
+                    stub = index_pb2_grpc.IndexStub(channel)
+                else:
+                    print(f"RPC failed: {e.code()}")
+                    print(f"RPC error details: {e.details()}")
         except KeyboardInterrupt:
             print("\nStopping the client...")
             return
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="Client")
+    parser.add_argument("--host_gateway", type=str, required=True,
+                        help="Host para a gateway gRPC")
+    parser.add_argument("--port_gateway", type=str, required=True,
+                        help="Porta para a gateway gRPC")
+    args = parser.parse_args()
+    
+    run(args.host_gateway, args.port_gateway)

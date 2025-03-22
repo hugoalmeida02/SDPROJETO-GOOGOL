@@ -1,3 +1,4 @@
+import argparse
 import grpc
 import index_pb2
 from google.protobuf import empty_pb2
@@ -15,11 +16,11 @@ FAILURE_THRESHOLD = 3
 SAVE_INTERVAL = 5
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
-    def __init__(self):
-        self.host = "localhost"
-        self.port = "8190"
-        self.url_queue = "localhost:8180"
-        self.gateway_file = f"gateway_data_{self.port}.json"
+    def __init__(self, host, port, host_url_queue, port_url_queue):
+        self.host = host
+        self.port = port
+        self.url_queue = f"{host_url_queue}:{port_url_queue}"
+        self.gateway_file = f"gateway_data_{self.host}_{self.port}.json"
         self.search_counter = {}
         self.response_times = {} 
         self.index_sizes = {}
@@ -208,15 +209,15 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
 
         return response
 
-def serve():
+def run(host, port, host_url_queue, port_url_queue):
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        gateway_service = GatewayServicer()
+        gateway_service = GatewayServicer(host, port, host_url_queue, port_url_queue)
         index_pb2_grpc.add_IndexServicer_to_server(gateway_service, server)
 
-        server.add_insecure_port("localhost:8190")  # O Gateway escuta na porta 8190
+        server.add_insecure_port(f"{host}:{port}")  # O Gateway escuta na porta 8190
         server.start()
-        print("Gateway RPC iniciado na porta 8190...")
+        print(f"Gateway RPC started on {host}:{port}")
         server.wait_for_termination()
     except KeyboardInterrupt:
             print("\nStopping the Gateway...")
@@ -224,4 +225,15 @@ def serve():
 
 
 if __name__ == "__main__":
-    serve()
+    parser = argparse.ArgumentParser(description="Gateway")
+    parser.add_argument("--host", type=str, required=True,
+                        help="Host para o servidor gRPC")
+    parser.add_argument("--port", type=str, required=True,
+                        help="Porta para o servidor gRPC")
+    parser.add_argument("--host_url_queue", type=str, required=True,
+                        help="Host para o servidor gRPC")
+    parser.add_argument("--port_url_queue", type=str, required=True,
+                        help="Porta para o servidor gRPC")
+    args = parser.parse_args()
+    
+    run(args.host, args.port, args.host_url_queue, args.port_url_queue)

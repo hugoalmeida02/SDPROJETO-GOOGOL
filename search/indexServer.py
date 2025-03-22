@@ -16,13 +16,14 @@ REPLICAS = []
 
 
 class IndexServicer(index_pb2_grpc.IndexServicer):
-    def __init__(self, host, port):
+    def __init__(self, host, port, host_gateway, port_gateway):
         self.host = host
         self.port = port
+        self.gateway = f"{host_gateway}:{port_gateway}"
         self.lock = threading.Lock()
         self.pending_updates = queue.Queue()
-        self.index_file_word = f"words_data_{port}.json"
-        self.index_file_urls = f"urls_data_{port}.json"
+        self.index_file_word = f"words_data_{self.host}_{self.port}.json"
+        self.index_file_urls = f"urls_data_{self.host}_{self.port}.json"
         self.load_data()
         self.pending_updates = queue.Queue()
 
@@ -33,7 +34,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             target=self.check_replicas_periodically, daemon=True).start()
 
     def registerIndex(self):
-        gateway_channel = grpc.insecure_channel("localhost:8190")
+        gateway_channel = grpc.insecure_channel(self.gateway)
         self.gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
         try:
             response = self.gateway_stub.registerIndexBarrel(
@@ -95,11 +96,11 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         response = self.gateway_stub.getIndexBarrels(empty_pb2.Empty())
 
         for server in response.indexInfos:
-            if server not in REPLICAS and server != f"localhost:{self.port}":
+            if server not in REPLICAS and server != f"{self.host}:{self.port}":
                 REPLICAS.append(server)
 
         for replica in REPLICAS:
-            if replica == f"localhost:{self.port}":
+            if replica == f"{self.host}:{self.port}":
                 continue
             try:
                 print(f"🔄 Tentando sincronizar com {replica}...")
@@ -134,13 +135,13 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
     def update_replicas_from_gateway(self):
         """Obtém a lista de réplicas da Gateway."""
         try:
-            with grpc.insecure_channel("localhost:8190") as channel:
+            with grpc.insecure_channel(self.gateway) as channel:
                 stub = index_pb2_grpc.IndexStub(channel)
                 response = stub.getIndexBarrels(empty_pb2.Empty())
 
                 with self.lock:
                     REPLICAS = [
-                        replica for replica in response.indexInfos if replica != f"localhost:{self.port}"]
+                        replica for replica in response.indexInfos if replica != f"{self.host}:{self.port}"]
         except grpc.RpcError as e:
             print(f"⚠️ Erro ao contactar a Gateway: {e.details()}")
 
@@ -300,16 +301,16 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         return index_pb2.FullIndexResponse(palavras=entries_palavras, urls=entries_urls)
 
 
-def serve(host, port):
+def run(host, port, host_gateway, port_gateway):
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        index_service = IndexServicer(host, port)
+        index_service = IndexServicer(host, port, host_gateway, port_gateway)
         if index_service.registerIndex():
             index_service.sync_with_existing_replicas()
             index_pb2_grpc.add_IndexServicer_to_server(index_service, server)
             server.add_insecure_port(f"{host}:{port}")
             server.start()
-            print(f"Server started on port {port}")
+            print(f"Server started on {host}:{port}")
 
             server.wait_for_termination()
     except KeyboardInterrupt:
@@ -323,10 +324,10 @@ if __name__ == "__main__":
                         help="Host para o servidor gRPC")
     parser.add_argument("--port", type=str, required=True,
                         help="Porta para o servidor gRPC")
-    # parser.add_argument("--host_gateway", type=str, required=True,
-    #                     help="Host para o servidor gRPC")
-    # parser.add_argument("--port_gateway", type=str, required=True,
-    #                     help="Porta para o servidor gRPC")
+    parser.add_argument("--host_gateway", type=str, required=True,
+                        help="Host para o servidor gRPC")
+    parser.add_argument("--port_gateway", type=str, required=True,
+                        help="Porta para o servidor gRPC")
     args = parser.parse_args()
 
-    serve(args.host, args.port)
+    run(args.host, args.port, args.host_gateway, args.port_gateway)
