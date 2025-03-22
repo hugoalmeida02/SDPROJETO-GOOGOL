@@ -6,21 +6,51 @@ from concurrent import futures
 import random
 import time
 import threading
+import json
+import os
 
 MAX_INDEX_BARRELS = 3
 CHECK_INTERVAL = 5
 FAILURE_THRESHOLD = 3
+SAVE_INTERVAL = 5
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self):
         self.host = "localhost"
         self.port = "8190"
         self.url_queue = "localhost:8180"
-        self.index_barrels = {}
+        self.gateway_file = f"gateway_data_{self.port}.json"
+        self.load_data()
         self.lock = threading.Lock()
         
+        threading.Thread(target=self.auto_save, daemon=True).start()
         threading.Thread(target=self.check_index_servers, daemon=True).start()
 
+    def load_data(self):
+        if os.path.exists(self.gateway_file):
+            with open(self.gateway_file, "r") as f:
+                self.index_barrels = json.load(f)
+            print(f"✅ Dados carregados do ficheiro {self.gateway_file}")
+        else:
+            # Se o ficheiro não existir, cria um ficheiro vazio
+            with open(self.gateway_file, "w") as f:
+                json.dump({}, f)
+            print(
+                f"⚠️ Ficheiro {self.gateway_file} não encontrado. Criado um novo ficheiro vazio.")
+            self.index_barrels = {}
+        
+    def save_data(self):
+        """Guarda os dados no ficheiro JSON."""
+        with self.lock:
+            with open(self.gateway_file, "w") as f:
+                json.dump(self.index_barrels, f, indent=2)
+                
+    def auto_save(self):
+        """Guarda periodicamente os dados em ficheiros JSON."""
+        while True:
+            time.sleep(SAVE_INTERVAL)
+            self.save_data()
+    
     def registerIndexBarrel(self, request, context):
         
         address = f"{request.host}:{request.port}"
@@ -74,20 +104,20 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         
         active_servers = [barrel for barrel in self.index_barrels.keys()]
         random.shuffle(active_servers)
-        results = set()
-        print(request)
+        results = []
+        
         for server in active_servers:
             try:
                 with grpc.insecure_channel(server) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
                     response = stub.searchWord(request)
-                    results.update(response.urls)
+                    results = response.urls
                     break
             except grpc.RpcError as e:
                 print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
                 continue
 
-        return index_pb2.SearchWordResponse(urls=list(results))
+        return index_pb2.SearchWordResponse(urls=results)
 
     def putNew(self, request, context):
         channel = grpc.insecure_channel(self.url_queue)

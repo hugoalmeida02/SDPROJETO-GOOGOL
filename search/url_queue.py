@@ -5,20 +5,30 @@ from google.protobuf import empty_pb2
 from concurrent import futures
 import argparse
 import queue
+import json
+import os
+import threading
+import time
+
+SAVE_INTERVAL = 5
+
 
 class QueueService(index_pb2_grpc.IndexServicer):
     def __init__(self):
+        self.host = "localhost"
+        self.port = "8180"
         self.queue = queue.Queue()
-        
+    
     def takeNext(self, request, context):
         url = self.queue.get()
         return index_pb2.TakeNextResponse(url=url)
-    
+
     def putNew(self, request, context):
         self.queue.put(request.url)
         print(f"Added URL to index: {request.url}")
         return empty_pb2.Empty()
-    
+
+
 def queue_runner():
     try:
         queue1 = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -30,8 +40,9 @@ def queue_runner():
         print(f"Queue RPC iniciado na porta 8180")
         queue1.wait_for_termination()
     except KeyboardInterrupt:
-            print("\nStopping the Url Queue...")
-            return
+        print("\nStopping the Url Queue...")
+        return
+
 
 if __name__ == "__main__":
     queue_runner()

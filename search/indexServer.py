@@ -216,10 +216,13 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
     def addToIndexLinks(self, request, context):
         with self.lock:
             if request.url not in self.urls_data:
-                self.urls_data[request.url] = [request.link]
-            else:
-                if request.link not in self.urls_data[request.url]:
-                    self.urls_data[request.url].append(request.link)
+                self.urls_data[request.url] = {}
+                self.urls_data[request.url]["title"] = request.title
+                self.urls_data[request.url]["quote"] = request.quote
+                self.urls_data[request.url]["urls"] = []
+            
+            if request.link not in self.urls_data[request.url]:
+                self.urls_data[request.url]["urls"].append(request.link)
 
         if not request.from_multicast:
             threading.Thread(target=self.reliable_multicast, args=(
@@ -227,17 +230,33 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         return empty_pb2.Empty()
 
     def searchWord(self, request, context):
-        if " " in request.words:
-            words = request.words.split(" ")
-        words = request.words
+        palavras = request.words.split()
+    
+        if not palavras:
+            return index_pb2.SearchWordResponse(urls=[])
         
-        with self.lock:
-            for word in words:
-                
-                
-        # return index_pb2.SearchWordResponse(urls=[url[0] for url in urls])
+        # Verifica se a primeira palavra existe no dicionário
+        if palavras[0] in self.words_data:
+            urls_comuns = set(self.words_data[palavras[0]])
+        else:
+            
+            return index_pb2.SearchWordResponse(urls=[])
+        
+        for palavra in palavras[1:]:
+            if palavra in self.words_data:
+                urls_comuns &= set(self.words_data[palavra])
+            else:
+                return index_pb2.SearchWordResponse(urls=[])
 
-        return index_pb2.SearchWordResponse(urls="aaaaaaa")
+        urls_com_importancia = [(url, self.urls_data[url]["title"], self.urls_data[url]["quote"], len(self.urls_data[url]["urls"])) for url in urls_comuns]
+        urls_ordenados = sorted(urls_com_importancia, key=lambda x: x[1], reverse=True)
+        
+        urls = [url for url, title, quote, _ in urls_ordenados] 
+        urls1 = [[url,title,quote] for url, title, quote, _ in urls_ordenados]
+        print(urls1)
+        
+        
+        return index_pb2.SearchWordResponse(urls=urls)
 
     def getFullIndex(self, request, context):
         """Envia todo o índice para um novo servidor que está a sincronizar."""

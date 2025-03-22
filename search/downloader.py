@@ -10,20 +10,22 @@ import random
 
 SERVERS = []
 
-def extract_words(html):
-    soup = jsoup(html, 'html.parser')
-    text = soup.get_text()
-    words = re.findall(r'\b\w{3,}\b', text.lower())  # Palavras com 3+ letras
-    return set(words)
-
-def extract_links(html, base_url):
+def extract_info(html, base_url):
     soup = jsoup(html, 'html.parser')
     links = set()
+    
     for a in soup.find_all('a', href=True):
         href = a['href']
         if href.startswith('http'):
             links.add(href)
-    return links
+            
+    text = soup.get_text()
+    words = re.findall(r'\b\w{3,}\b', text.lower())  # Palavras com 3+ letras
+    
+    title = soup.title.string if soup.title else 'Título não encontrado'
+    quote = soup.find('p').text if soup.find('p') else 'Citação não encontrada'
+    
+    return set(words), links, title, quote
 
 def run():
     url_queue_channel = grpc.insecure_channel('localhost:8180')  # Conectar à queue
@@ -37,19 +39,19 @@ def run():
                 
                 response = url_queue_stub.takeNext(empty_pb2.Empty())  # Pede um URL da fila
                 url = response.url
-                
+                print(f"Processando URL: {url}")
                 if not url:
                     continue
-                
-                print(f"Processando URL: {url}")
                 
                 try:
                     # Fetch webpage using requests and parse with BeautifulSoup
                     response = requests.get(url)
                     response.raise_for_status()  # Raise an exception for bad status codes
                     
-                    words = extract_words(response.text)
-                    links = extract_links(response.text, url)
+                    words, links, title, quote = extract_info(response.text, url)
+                    
+                    print(title)
+                    print(quote)
                     
                     while True:
                         response = gateway_stub.getIndexBarrels(empty_pb2.Empty())
@@ -66,11 +68,13 @@ def run():
                                 with grpc.insecure_channel(server) as channel:
                                     print(f"Connectado server {server}")
                                     index_stub = index_pb2_grpc.IndexStub(channel)
+                                    
                                     for word in words:
                                         index_stub.addToIndexWords(index_pb2.AddToIndexRequestWords(word=word, url=url, from_multicast=False))
-                                    print("sucesso")
+                                        
                                     for link in links:   
-                                        index_stub.addToIndexLinks(index_pb2.AddToIndexRequestLinks(url=url, link=link, from_multicast=False))
+                                        index_stub.addToIndexLinks(index_pb2.AddToIndexRequestLinks(url=url, title=title, quote=quote,  link=link, from_multicast=False))
+                                    
                                         
                                     
                                 for link in links:   
@@ -82,7 +86,7 @@ def run():
                             break
                         else:
                             print("Nenhum Index Barrel disponivel")
-                    
+                        time.sleep(100)
                     
                 except requests.RequestException as e:
                     print(f"Error fetching webpage: {e}")
