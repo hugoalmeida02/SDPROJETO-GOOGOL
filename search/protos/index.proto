@@ -39,7 +39,7 @@ message SearchWordRequest {
 }
 
 message SearchBacklinksRequest {
-    string words = 1;
+    string url = 1;
 }
 
 message WordInfo {

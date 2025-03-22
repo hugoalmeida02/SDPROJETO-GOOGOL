@@ -277,7 +277,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         with self.lock:
             backlinks = []
             for urls in self.urls_data.items():
-                if request.words in urls[1]["urls"]:
+                if request.url in urls[1]["urls"]:
                     backlinks.append(urls[0])
         
         return index_pb2.SearchBacklinksResponse(backlinks=backlinks)
