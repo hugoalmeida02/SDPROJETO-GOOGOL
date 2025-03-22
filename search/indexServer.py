@@ -233,28 +233,31 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         palavras = request.words.split()
     
         if not palavras:
-            return index_pb2.SearchWordResponse(urls=[])
+            return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
         
         # Verifica se a primeira palavra existe no dicionário
         if palavras[0] in self.words_data:
             urls_comuns = set(self.words_data[palavras[0]])
         else:
             
-            return index_pb2.SearchWordResponse(urls=[])
+            return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
         
         for palavra in palavras[1:]:
             if palavra in self.words_data:
                 urls_comuns &= set(self.words_data[palavra])
             else:
-                return index_pb2.SearchWordResponse(urls=[])
+                return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
 
         urls_com_importancia = [(url, self.urls_data[url]["title"], self.urls_data[url]["quote"], len(self.urls_data[url]["urls"])) for url in urls_comuns]
         urls_ordenados = sorted(urls_com_importancia, key=lambda x: x[1], reverse=True)
         
-        urls = [url for url, title, quote, _ in urls_ordenados] 
-        urls1 = [[url,title,quote] for url, title, quote, _ in urls_ordenados]
-        print(urls1)
-        
+        urls = []
+        for url, title, quote, _ in urls_ordenados:
+            url_info = index_pb2.WordInfo()
+            url_info.url = url
+            url_info.title = title
+            url_info.quote = quote
+            urls.append(url_info)
         
         return index_pb2.SearchWordResponse(urls=urls)
 

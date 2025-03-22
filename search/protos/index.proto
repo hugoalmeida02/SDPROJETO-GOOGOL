@@ -37,8 +37,14 @@ message SearchWordRequest {
     string words = 1;
 }
 
+message WordInfo {
+    string url = 1;
+    string title = 2;
+    string quote = 3;
+}
+
 message SearchWordResponse {
-    repeated string urls = 1;
+    repeated WordInfo urls = 1;
 }
 
 message TakeNextResponse {
