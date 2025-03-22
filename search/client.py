@@ -12,23 +12,25 @@ def run():
             try:
                 option = input()
                 
-                if option.startswith("http"):
-                    stub.putNew(index_pb2.PutNewRequest(url=option))
+                # if option.startswith("http"):
+                #     stub.putNew(index_pb2.PutNewRequest(url=option))
                     
-                else:
-                    response = stub.searchWord(index_pb2.SearchWordRequest(words=option))
-                    if response.urls:
-                        print(f"A palavra '{option}' foi encontrada nos seguintes URLs:")
-                        paginas = [response.urls[i:i + 10] for i in range(0, len(response.urls), 10)]
-                        for i, pagina in enumerate(paginas):
-                            print(f"Página {i+1}:")
-                            for urls in pagina:
-                                print(f" Url - {urls.url}")
-                                print(f" Title - {urls.title}")
-                                print(f" Quote - {urls.quote}")
-                                print()
-                    else:
-                        print(f"Nenhum resultado encontrado para '{option}'.")
+                # else:
+                    # response = stub.searchWord(index_pb2.SearchWordRequest(words=option))
+                response = stub.searchBacklinks(index_pb2.SearchBacklinksRequest(words=option))
+                print(response)
+                    # if response.urls:
+                    #     print(f"A palavra '{option}' foi encontrada nos seguintes URLs:")
+                    #     paginas = [response.urls[i:i + 10] for i in range(0, len(response.urls), 10)]
+                    #     for i, pagina in enumerate(paginas):
+                    #         print(f"Página {i+1}:")
+                    #         for urls in pagina:
+                    #             print(f" Url - {urls.url}")
+                    #             print(f" Title - {urls.title}")
+                    #             print(f" Quote - {urls.quote}")
+                    #             print()
+                    # else:
+                    #     print(f"Nenhum resultado encontrado para '{option}'.")
             except grpc.RpcError as e:
                 print(f"RPC failed: {e.code()}")
                 print(f"RPC error details: {e.details()}")

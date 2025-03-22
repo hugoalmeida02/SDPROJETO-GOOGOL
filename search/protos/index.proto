@@ -10,6 +10,7 @@ service Index {
     rpc addToIndexWords (AddToIndexRequestWords) returns (google.protobuf.Empty);
     rpc addToIndexLinks (AddToIndexRequestLinks) returns (google.protobuf.Empty);
     rpc searchWord (SearchWordRequest) returns (SearchWordResponse);
+    rpc searchBacklinks (SearchBacklinksRequest) returns (SearchBacklinksResponse);
     rpc getFullIndex (google.protobuf.Empty) returns (FullIndexResponse);
     rpc registerIndexBarrel (IndexBarrelRequest) returns (ValidRegister);
     rpc getIndexBarrels (google.protobuf.Empty) returns (IndexBarrelInfo);
@@ -37,6 +38,10 @@ message SearchWordRequest {
     string words = 1;
 }
 
+message SearchBacklinksRequest {
+    string words = 1;
+}
+
 message WordInfo {
     string url = 1;
     string title = 2;
@@ -45,6 +50,10 @@ message WordInfo {
 
 message SearchWordResponse {
     repeated WordInfo urls = 1;
+}
+
+message SearchBacklinksResponse {
+    repeated string backlinks = 1;
 }
 
 message TakeNextResponse {

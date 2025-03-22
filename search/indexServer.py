@@ -106,21 +106,23 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 with grpc.insecure_channel(replica) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
                     response = stub.getFullIndex(empty_pb2.Empty())
-                    
+
                     with self.lock:
                         for entry in response.palavras:
                             if entry.param0 not in self.words_data:
                                 self.words_data[entry.param0] = [entry.param1]
                             else:
                                 if entry.param1 not in self.words_data[entry.param0]:
-                                    self.words_data[entry.param0].append(entry.param1)
-                        
+                                    self.words_data[entry.param0].append(
+                                        entry.param1)
+
                         for entry in response.urls:
                             if entry.param0 not in self.urls_data:
                                 self.urls_data[entry.param0] = [entry.param1]
                             else:
                                 if entry.param1 not in self.urls_data[entry.param0]:
-                                    self.urls_data[entry.param0].append(entry.param1)
+                                    self.urls_data[entry.param0].append(
+                                        entry.param1)
 
                 print(f"✅ Sincronização com {replica} concluída.")
                 return
@@ -220,7 +222,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 self.urls_data[request.url]["title"] = request.title
                 self.urls_data[request.url]["quote"] = request.quote
                 self.urls_data[request.url]["urls"] = []
-            
+
             if request.link not in self.urls_data[request.url]:
                 self.urls_data[request.url]["urls"].append(request.link)
 
@@ -230,36 +232,56 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         return empty_pb2.Empty()
 
     def searchWord(self, request, context):
-        palavras = request.words.split()
-    
-        if not palavras:
-            return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
-        
-        # Verifica se a primeira palavra existe no dicionário
-        if palavras[0] in self.words_data:
-            urls_comuns = set(self.words_data[palavras[0]])
-        else:
-            
-            return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
-        
-        for palavra in palavras[1:]:
-            if palavra in self.words_data:
-                urls_comuns &= set(self.words_data[palavra])
-            else:
+        with self.lock:
+            palavras = request.words.split()
+
+            if not palavras:
                 return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
 
-        urls_com_importancia = [(url, self.urls_data[url]["title"], self.urls_data[url]["quote"], len(self.urls_data[url]["urls"])) for url in urls_comuns]
-        urls_ordenados = sorted(urls_com_importancia, key=lambda x: x[1], reverse=True)
-        
-        urls = []
-        for url, title, quote, _ in urls_ordenados:
-            url_info = index_pb2.WordInfo()
-            url_info.url = url
-            url_info.title = title
-            url_info.quote = quote
-            urls.append(url_info)
-        
+            # Verifica se a primeira palavra existe no dicionário
+            if palavras[0] in self.words_data:
+                urls_comuns = set(self.words_data[palavras[0]])
+            else:
+
+                return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
+
+            for palavra in palavras[1:]:
+                if palavra in self.words_data:
+                    urls_comuns &= set(self.words_data[palavra])
+                else:
+                    return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
+
+            urls_com_importancia = []
+            for url in urls_comuns:
+                importancia = 0
+                for urls in self.urls_data.items():
+                    if url in urls[1]["urls"]:
+                        importancia += 1
+                urls_com_importancia.append(
+                    [url, self.urls_data[url]["title"], self.urls_data[url]["quote"], importancia])
+
+            urls_ordenados = sorted(
+                urls_com_importancia, key=lambda x: x[3], reverse=True)
+
+            urls = []
+            for url, title, quote, _ in urls_ordenados:
+                url_info = index_pb2.WordInfo()
+                url_info.url = url
+                url_info.title = title
+                url_info.quote = quote
+                urls.append(url_info)
+
         return index_pb2.SearchWordResponse(urls=urls)
+
+    def searchBacklinks(self, request, context):
+        with self.lock:
+            backlinks = []
+            for urls in self.urls_data.items():
+                if request.words in urls[1]["urls"]:
+                    backlinks.append(urls[0])
+        
+        return index_pb2.SearchBacklinksResponse(backlinks=backlinks)
+
 
     def getFullIndex(self, request, context):
         """Envia todo o índice para um novo servidor que está a sincronizar."""
@@ -274,7 +296,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 for link in links:
                     entry = index_pb2.IndexEntry(param0=url, param1=link)
                     entries_urls.append(entry)
-                    
+
         return index_pb2.FullIndexResponse(palavras=entries_palavras, urls=entries_urls)
 
 

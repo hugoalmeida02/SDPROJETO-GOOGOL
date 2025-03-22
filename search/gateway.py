@@ -119,6 +119,26 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
 
         return index_pb2.SearchWordResponse(urls=results)
 
+    def searchBacklinks(self, request, context):
+        """Pesquisa a palavra em todos os servidores e agrega os resultados"""
+        
+        active_servers = [barrel for barrel in self.index_barrels.keys()]
+        random.shuffle(active_servers)
+        results = []
+        
+        for server in active_servers:
+            try:
+                with grpc.insecure_channel(server) as channel:
+                    stub = index_pb2_grpc.IndexStub(channel)
+                    response = stub.searchBacklinks(request)
+                    results = response.backlinks
+                    break
+            except grpc.RpcError as e:
+                print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
+                continue
+
+        return index_pb2.SearchBacklinksResponse(backlinks=results)
+
     def putNew(self, request, context):
         channel = grpc.insecure_channel(self.url_queue)
         try:
