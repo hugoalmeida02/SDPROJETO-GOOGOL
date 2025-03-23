@@ -1,64 +1,53 @@
-Relatório Final - Projeto Googol
+Relatório Meta 1 - Projeto Googol
 
-1. Arquitetura de Software
-
+Arquitetura de Software
 O sistema Googol é composto por cinco principais componentes distribuídos:
 
-📦 Index Storage Barrel
+1. Index Storage Barrel
 
 Servidor que armazena o índice invertido.
-
 Suporta replicacão entre barrels (Reliable Multicast).
+
 
 Ficheiros utilizados:
 
 words_data_{port}.json: palavras → URLs
-
 urls_data_{port}.json: backlinks (URLs que apontam para outros)
 
-page_text_{port}.json: título e texto de cada URL
 
-🌐 Downloader
+2. Downloader
 
 Visita páginas web e extrai palavras, links e texto com BeautifulSoup.
-
 Envia palavras e links para um Index Barrel via RPC.
-
 Funciona de forma paralela, consumindo da URLQueue.
 
-🧠 Gateway
+
+3. Gateway
 
 Ponto de entrada para os clientes.
-
 Mantém lista de barrels ativos (verificação periódica).
-
 Mede tempo médio de resposta e recolhe estatísticas.
-
 Usa RPC para comunicar com os barrels: search, index, getStats, etc.
 
-👤 Cliente
+
+4. Cliente
 
 Interface simples via terminal para interação com o sistema.
 
 Permite:
 
 Introduzir URLs manualmente
-
 Pesquisar termos (com ordenação e snippet)
-
 Consultar backlinks
-
 Ver estatísticas
 
-📋 URL Queue
 
-Integrada na Gateway.
-
+5. URL Queue
 Armazena URLs descobertos para futura indexação.
-
 Consumida pelos downloaders.
 
-2. Replicação do Índice (Reliable Multicast)
+
+Replicação do Índice (Reliable Multicast)
 
 Ao receber uma nova entrada, o Index Barrel replica-a para as outras réplicas.
 

@@ -10,27 +10,28 @@ import threading
 import json
 import os
 
-MAX_INDEX_BARRELS = 3
-CHECK_INTERVAL = 5
-FAILURE_THRESHOLD = 3
-SAVE_INTERVAL = 5
+MAX_INDEX_BARRELS = 3 #Número máximo de barrels
+CHECK_INTERVAL = 5  # Intervalo para verificar replicas ativas
+FAILURE_THRESHOLD = 3 #Número máximo de vezes que um barrel pode falhar
+SAVE_INTERVAL = 5 # Intervalo para auto save à data
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, host, port, host_url_queue, port_url_queue):
-        self.host = host
-        self.port = port
+        self.host = host #Host gateway
+        self.port = port #Port gateway
         self.url_queue = f"{host_url_queue}:{port_url_queue}"
-        self.gateway_file = f"gateway_data_{self.host}_{self.port}.json"
-        self.search_counter = {}
-        self.response_times = {} 
-        self.index_sizes = {}
+        self.gateway_file = f"gateway_data_{self.host}_{self.port}.json" #Ficheiro para guardar data da gateway
+        self.search_counter = {} #Data para estatitiscas
+        self.response_times = {} #Data para estatitiscas
+        self.index_sizes = {} #Data para estatitiscas
         self.load_data()
         self.lock = threading.Lock()
         
-        threading.Thread(target=self.auto_save, daemon=True).start()
-        threading.Thread(target=self.check_index_servers, daemon=True).start()
+        threading.Thread(target=self.auto_save, daemon=True).start() # Thread para guarda a data periodicamente
+        threading.Thread(target=self.check_index_servers, daemon=True).start() # Thread para manter a informacao sobre os barrels ativos
 
     def load_data(self):
+        """Carrega os dados do ficheiro JSON ou cria ficheiro vazio se não existir."""
         if os.path.exists(self.gateway_file):
             with open(self.gateway_file, "r") as f:
                 data = json.load(f)
@@ -40,7 +41,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 self.index_barrels = data.get("index_barrels", {})
             print(f"✅ Dados carregados do ficheiro {self.gateway_file}")
         else:
-            # Se o ficheiro não existir, cria um ficheiro vazio
             with open(self.gateway_file, "w") as f:
                 json.dump({}, f)
             print(
@@ -69,7 +69,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             self.save_data()
     
     def registerIndexBarrel(self, request, context):
-        
+        """ Regista o index barrel na gateway ao inicar """
         address = f"{request.host}:{request.port}"
         
         if len(self.index_barrels) >= MAX_INDEX_BARRELS:
@@ -80,6 +80,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             return index_pb2.ValidRegister(valid=True)
 
     def getIndexBarrels(self, request, context):
+        """ Informa acerca dos Index Barrels ativos """
         response = []
         with self.lock:
             for address in self.index_barrels:
@@ -88,6 +89,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         return index_pb2.IndexBarrelInfo(indexInfos=response)
 
     def ping_server(self, address):
+        """ Função pingar um Index Barrel para verificar está ativo """
         try:
             with grpc.insecure_channel(address) as channel:
                 stub = index_pb2_grpc.IndexStub(channel)
@@ -97,6 +99,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             return False
         
     def check_index_servers(self):
+        """ Função para verificar se um Barrel está ativo """
         while True:
             time.sleep(CHECK_INTERVAL)
             to_remove = []
@@ -175,6 +178,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         return index_pb2.SearchBacklinksResponse(backlinks=results)
 
     def putNew(self, request, context):
+        """ Coloca o url fornecido pelo client na queue"""
         channel = grpc.insecure_channel(self.url_queue)
         try:
             stub = index_pb2_grpc.IndexStub(channel)
@@ -186,6 +190,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         return empty_pb2.Empty()
     
     def getStats(self, request, context):
+        """ Retorna as estáticas """
         response = index_pb2.SystemStats()
 
         # Top 10 pesquisas
@@ -215,13 +220,14 @@ def run(host, port, host_url_queue, port_url_queue):
         gateway_service = GatewayServicer(host, port, host_url_queue, port_url_queue)
         index_pb2_grpc.add_IndexServicer_to_server(gateway_service, server)
 
-        server.add_insecure_port(f"{host}:{port}")  # O Gateway escuta na porta 8190
+        server.add_insecure_port(f"{host}:{port}")
         server.start()
         print(f"Gateway RPC started on {host}:{port}")
         server.wait_for_termination()
     except KeyboardInterrupt:
-            print("\nStopping the Gateway...")
-            return
+        print("\nStopping the Gateway...")
+        gateway_service.save_data()
+        return
 
 
 if __name__ == "__main__":

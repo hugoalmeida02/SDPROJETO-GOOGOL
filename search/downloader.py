@@ -9,9 +9,9 @@ import time
 import random
 import argparse
 
-SERVERS = []
 
 def extract_info(html, base_url):
+    """ Extrai a informação de uma página """
     soup = jsoup(html, 'html.parser')
     links = set()
     
@@ -47,6 +47,7 @@ def run(host_gateway, port_gateway, host_url_queue, port_url_queue):
             
             url = response.url
             print(f"Processando URL: {url}")
+            
             if not url:
                 continue
             
@@ -67,7 +68,7 @@ def run(host_gateway, port_gateway, host_url_queue, port_url_queue):
                         gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
                         continue
                     
-                    SERVERS = []
+                    SERVERS = [] #Guarda os Index Barrels ativos
                     
                     for server in response.indexInfos:
                         if server not in SERVERS:
