@@ -232,9 +232,9 @@ def run(host, port, host_url_queue, port_url_queue):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gateway")
-    parser.add_argument("--host", type=str, required=True,
+    parser.add_argument("--host_gateway", type=str, required=True,
                         help="Host para o servidor gRPC")
-    parser.add_argument("--port", type=str, required=True,
+    parser.add_argument("--port_gateway", type=str, required=True,
                         help="Porta para o servidor gRPC")
     parser.add_argument("--host_url_queue", type=str, required=True,
                         help="Host para o servidor gRPC")
