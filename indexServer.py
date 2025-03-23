@@ -248,16 +248,19 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                     urls_comuns &= set(self.words_data[palavra])
                 else:
                     return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])
-
+            print(palavras)
+            print(urls_comuns)
             urls_com_importancia = []
             for url in urls_comuns:
+                print(url)
                 importancia = 0
                 for urls in self.urls_data.items():
                     if url in urls[1]["urls"]:
                         importancia += 1
-                urls_com_importancia.append(
-                    [url, self.urls_data[url]["title"], self.urls_data[url]["quote"], importancia])
-
+                if url in self.urls_data.keys():
+                    urls_com_importancia.append(
+                        [url, self.urls_data[url]["title"], self.urls_data[url]["quote"], importancia])
+            print(urls_com_importancia)
             urls_ordenados = sorted(
                 urls_com_importancia, key=lambda x: x[3], reverse=True)
 
