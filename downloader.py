@@ -51,10 +51,13 @@ def run(host_gateway, port_gateway, host_url_queue, port_url_queue):
                 continue
 
             url = response.url
-            print(f"Processando URL: {url}")
-
+            
             if not url:
                 continue
+            
+            print(f"Processando URL: {url}")
+
+            
 
             try:
                 # Fetch webpage using requests and parse with BeautifulSoup

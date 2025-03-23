@@ -38,13 +38,14 @@ Googol/
    python -m grpc_tools.protoc -I. --python_out=../ --grpc_python_out=../ index.proto
 
 2. Iniciar a Gateway
-   python gateway.py –host_gateway localhost –port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
+   python gateway.py --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
 
 3. Iniciar a Url_queue
-   python url_queue.py --host_url_queue localhost –port_url_queue 8180
+   python url_queue.py --host_url_queue localhost --port_url_queue 8180
 
 4. Iniciar um ou mais Index Barrels
-   python indexServer.py --host localhost --port 8123 --host_gateway localhost --port_gateway python indexServer.py --host localhost --port 8123 --host_gateway localhost --port_gateway 8190
+   python indexServer.py --host localhost --port 8123 --host_gateway localhost --port_gateway 8190
+   python indexServer.py --host localhost --port 8124 --host_gateway localhost --port_gateway 8190
 
 5. Iniciar os Downloaders (um ou mais)
    python downloader.py --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180

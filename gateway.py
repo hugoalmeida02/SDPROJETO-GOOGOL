@@ -242,4 +242,4 @@ if __name__ == "__main__":
                         help="Porta para o servidor gRPC")
     args = parser.parse_args()
     
-    run(args.host, args.port, args.host_url_queue, args.port_url_queue)
+    run(args.host_gateway, args.port_gateway, args.host_url_queue, args.port_url_queue)

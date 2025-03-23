@@ -92,4 +92,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    run(args.host, args.port)
+    run(args.host_url_queue, args.port_url_queue)
