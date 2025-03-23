@@ -174,3 +174,31 @@ As mensagens estão organizadas de forma modular:
 - WordInfo: informação individual de uma página (url, título, citação).
 - IndexEntry: estrutura genérica usada na sincronização (param0, param1).
 - BarrelStats: inclui endereço, tamanho do índice e tempo médio de resposta.
+
+**Distribuição de Tarefas**
+
+Este projeto foi desenvolvido individualmente por Hugo Almeida, estudante de Engenharia Informática da Universidade de Coimbra. Todas as fases, desde a análise, desenho da arquitetura, implementação, testes e documentação foram realizadas pelo autor.
+
+**Testes Realizados**
+
+A seguinte tabela resume os testes realizados para validar o funcionamento do sistema Googol:
+
+| Nº  | Descrição do Teste                              | Componente(s) envolvido(s) | Resultado Esperado                               | Resultado |
+| --- | ----------------------------------------------- | -------------------------- | ------------------------------------------------ | --------- |
+| 1   | Inserção manual de URL pela interface cliente   | Client / URLQueue          | URL adicionado à fila e visível para downloaders | Pass      |
+| 2   | Extração de palavras e links de uma página      | Downloader                 | Palavras e links enviados para Index Barrel      | Pass      |
+| 3   | Propagação de palavra via reliable multicast    | Index Barrel               | Todas as réplicas recebem o mesmo dado           | Pass      |
+| 4   | Pesquisa de palavra simples                     | Gateway / Index Barrel     | Lista de páginas contendo a palavra              | Pass      |
+| 5   | Pesquisa com múltiplos termos                   | Gateway / Index Barrel     | Apenas páginas com todos os termos listadas      | Pass      |
+| 6   | Ordenação de resultados por número de backlinks | Gateway / Index Barrel     | Maior número de ligações = maior relevância      | Pass      |
+| 7   | Consulta de backlinks de uma página             | Gateway / Index Barrel     | Páginas que apontam para a URL fornecida         | Pass      |
+| 8   | Falha de ligação de um barrel                   | Gateway                    | Barrel removido da lista de ativos após 3 falhas | Pass      |
+| 9   | Reenviar atualizações falhadas                  | Index Barrel               | Atualizações pendentes são enviadas mais tarde   | Pass      |
+| 10  | Estatísticas em tempo real                      | Gateway                    | Listagem correta de pesquisas, barrels, tempos   | Pass      |
+
+Todos os testes foram executados com sucesso, validando a robustez do sistema distribuído.
+
+**Conclusão**
+
+O projeto Googol implementa um motor de busca distribuído com características essenciais como indexação recursiva, replicação automática com tolerância a falhas, balanceamento de carga, persistência, e recolha de estatísticas em tempo real. A arquitetura modular e a utilização de gRPC tornam o sistema facilmente extensível.
+Este relatório documenta detalhadamente todos os componentes, garantindo que um novo membro da equipa poderá facilmente compreender e dar continuidade ao desenvolvimento.
