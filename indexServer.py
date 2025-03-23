@@ -61,23 +61,23 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         if os.path.exists(self.index_file_word):
             with open(self.index_file_word, "r") as f:
                 self.words_data = json.load(f)
-            print(f"✅ Dados carregados do ficheiro {self.index_file_word}")
+            print(f"Dados carregados do ficheiro {self.index_file_word}")
         else:
             with open(self.index_file_word, "w") as f:
                 json.dump({}, f)
             print(
-                f"⚠️ Ficheiro {self.index_file_word} não encontrado. Criado um novo ficheiro vazio.")
+                f"Ficheiro {self.index_file_word} não encontrado. Criado um novo ficheiro vazio.")
             self.words_data = {}
 
         if os.path.exists(self.index_file_urls):
             with open(self.index_file_urls, "r") as f:
                 self.urls_data = json.load(f)
-            print(f"✅ Dados carregados do ficheiro {self.index_file_urls}")
+            print(f"Dados carregados do ficheiro {self.index_file_urls}")
         else:
             with open(self.index_file_urls, "w") as f:
                 json.dump({}, f)
             print(
-                f"⚠️ Ficheiro {self.index_file_urls} não encontrado. Criado um novo ficheiro vazio.")
+                f"Ficheiro {self.index_file_urls} não encontrado. Criado um novo ficheiro vazio.")
             self.urls_data = {}
 
     def save_data(self):
@@ -128,12 +128,12 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                                     self.urls_data[entry.param0].append(
                                         entry.param1)
 
-                print(f"✅ Sincronização com {replica} concluída.")
+                print(f"Sincronização com {replica} concluída.")
                 return
             except grpc.RpcError:
-                print(f"⚠️ Falha ao sincronizar com {replica}")
+                print(f"Falha ao sincronizar com {replica}")
 
-        print("❌ Nenhuma réplica disponível. Iniciando vazio.")
+        print("Nenhuma réplica disponível. Iniciando vazio.")
 
     def update_replicas_from_gateway(self):
         """Obtém a lista de réplicas da Gateway."""
@@ -145,9 +145,8 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 with self.lock:
                     self.replicas = [
                         replica for replica in response.indexInfos if replica != f"{self.host}:{self.port}"]
-                    print(self.replicas)
         except grpc.RpcError as e:
-            print(f"⚠️ Erro ao contactar a Gateway: {e.details()}")
+            print(f"Erro ao contactar a Gateway: {e.details()}")
 
     def check_replicas_periodically(self):
         """Verifica periodicamente a lista de réplicas na Gateway."""
@@ -170,8 +169,6 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                         stub.addToIndexLinks(index_pb2.AddToIndexRequestLinks(
                             url=param0, title=param1, quote=param2, link=param3, from_multicast=True))
             except grpc.RpcError:
-                print(
-                    f"⚠️ Falha ao replicar para {replica}. Guardando para retry.")
                 self.pending_updates.put(
                     (param0, param1, param2, param3, tipo, replica))
 
@@ -188,8 +185,6 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         while True:
             time.sleep(5)  # Tentar reenviar a cada 5 segundos
             param0, param1, param2, param3, tipo, replica = self.pending_updates.get()
-            print(
-                f"🔄 Reenviando atualização para {replica}")
             try:
                 with grpc.insecure_channel(replica) as channel:
                     stub = index_pb2_grpc.IndexStub(channel)
@@ -200,8 +195,6 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                         stub.addToIndexLinks(index_pb2.AddToIndexRequestLinks(
                             url=param0, title=param1, quote=param2, link=param3, from_multicast=True))
             except grpc.RpcError:
-                print(
-                    f"⚠️ Falha ao reenviar para {replica}. Guardando novamente.")
                 self.pending_updates.put(
                     (param0, param1, param2, param3, tipo, replica))
 

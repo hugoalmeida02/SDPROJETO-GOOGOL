@@ -30,12 +30,12 @@ class QueueService(index_pb2_grpc.IndexServicer):
         if os.path.exists(self.url_queue_file):
             with open(self.url_queue_file, "r") as f:
                 self.queue = json.load(f)
-            print(f"✅ Dados carregados do ficheiro {self.url_queue_file}")
+            print(f"Dados carregados do ficheiro {self.url_queue_file}")
         else:
             with open(self.url_queue_file, "w") as f:
                 json.dump({}, f)
             print(
-                f"⚠️ Ficheiro {self.url_queue_file} não encontrado. Criado um novo ficheiro vazio.")
+                f"Ficheiro {self.url_queue_file} não encontrado. Criado um novo ficheiro vazio.")
             self.queue = []
 
     def save_data(self):

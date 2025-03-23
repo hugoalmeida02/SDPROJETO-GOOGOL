@@ -39,12 +39,12 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 self.response_times = data.get("response_times", {})
                 self.index_sizes = data.get("index_sizes", {})
                 self.index_barrels = data.get("index_barrels", {})
-            print(f"✅ Dados carregados do ficheiro {self.gateway_file}")
+            print(f"Dados carregados do ficheiro {self.gateway_file}")
         else:
             with open(self.gateway_file, "w") as f:
                 json.dump({}, f)
             print(
-                f"⚠️ Ficheiro {self.gateway_file} não encontrado. Criado um novo ficheiro vazio.")
+                f"Ficheiro {self.gateway_file} não encontrado. Criado um novo ficheiro vazio.")
             self.search_counter = {}
             self.response_times = {}
             self.index_sizes = {}
@@ -107,15 +107,13 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 for address in list(self.index_barrels.keys()):
                     if self.ping_server(address):
                         self.index_barrels[address]["failures"] = 0
-                        print(f"✅ Sucesso ao contactar {address}")
                     else:
                         self.index_barrels[address]["failures"] += 1
-                        print(f"⚠️ Falha {self.index_barrels[address]['failures']} ao contactar {address}")
                         if self.index_barrels[address]["failures"] >= FAILURE_THRESHOLD:
                             to_remove.append(address)
 
                 for address in to_remove:
-                    print(f"❌ Removido Index Server inativo: {address}")
+                    print(f"Removido Index Server inativo: {address}")
                     del self.index_barrels[address]
             
             
@@ -144,7 +142,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
 
                 break
             except grpc.RpcError as e:
-                print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
+                print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
 
         return index_pb2.SearchWordResponse(urls=results)
@@ -172,7 +170,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 break
             
             except grpc.RpcError as e:
-                print(f"⚠️ Falha ao contactar {server}, tentando próximo...")
+                print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
 
         return index_pb2.SearchBacklinksResponse(backlinks=results)
