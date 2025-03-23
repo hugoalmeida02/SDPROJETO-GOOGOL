@@ -92,6 +92,6 @@ message SystemStats {
 message BarrelStats {
   string address = 1;
   int32 index_size = 2;
-  float avg_response_time = 3;
+  float avg_response_time = 3; 
 }
 
