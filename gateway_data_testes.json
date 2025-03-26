@@ -1,0 +1,10 @@
+{
+  "search_counter": {},
+  "response_times": {},
+  "index_sizes": {},
+  "index_barrels": {
+    "localhost:8123": {
+      "failures": 2
+    }
+  }
+}
