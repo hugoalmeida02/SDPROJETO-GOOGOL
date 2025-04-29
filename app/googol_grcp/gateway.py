@@ -1,8 +1,7 @@
 import argparse
 import grpc
-import index_pb2
+from index_pb2 import index_pb2, index_pb2_grpc
 from google.protobuf import empty_pb2
-import index_pb2_grpc
 from concurrent import futures
 import random
 import time
