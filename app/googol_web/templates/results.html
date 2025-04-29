@@ -9,6 +9,7 @@
     <h1>Resultados para: "{{ words }}"</h1>
 
     {% if urls %}
+        <h2>Resultados do Googol</h2>
         <ul>
         {% for url_info in urls %}
             <li>
@@ -18,8 +19,29 @@
         {% endfor %}
         </ul>
     {% else %}
-        <p>Nenhum resultado encontrado.</p>
+        <p>Nenhum resultado encontrado no Googol.</p>
     {% endif %}
+
+    <hr>
+
+    {% if hn_stories %}
+        <h2>Notícias Relacionadas (HackerNews)</h2>
+        <ul>
+        {% for story in hn_stories %}
+            <li>
+                <a href="{{ story.url }}" target="_blank">{{ story.title }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhuma notícia relacionada encontrada.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Resumo Gerado pela IA (OpenAI)</h2>
+    <p>{{ openai_summary }}</p>
+
 
     <br>
     <a href="/">Voltar</a>

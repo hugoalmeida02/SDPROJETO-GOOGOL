@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backlinks</title>
+</head>
+<body>
+    <h1>Backlinks para: "{{ url }}"</h1>
+
+    {% if backlinks %}
+        <ul>
+        {% for link in backlinks %}
+            <li>
+                <a href="{{ link }}" target="_blank">{{ link }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum backlink encontrado.</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Voltar</a>
+</body>
+</html>

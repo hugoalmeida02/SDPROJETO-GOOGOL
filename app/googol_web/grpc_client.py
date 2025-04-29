@@ -22,6 +22,12 @@ def search_words(words):
     response = stub.searchWord(index_pb2.SearchWordRequest(words=words))
     return response.urls
 
+def search_backlinks(url):
+    """ Pesquisa backlinks para um URL via Gateway """
+    stub = get_gateway_stub()
+    response = stub.searchBacklinks(index_pb2.SearchBacklinksRequest(url=url))
+    return response.backlinks
+
 def get_system_stats():
     """ Vai buscar as estatísticas do sistema à Gateway """
     stub = get_gateway_stub()
