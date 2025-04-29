@@ -2,7 +2,7 @@ import argparse
 import grpc
 from google.protobuf import empty_pb2
 from concurrent import futures
-from . import index_pb2
+from ..index_pb2 import index_pb2, index_pb2_grpc
 import random
 import time
 import threading
@@ -19,7 +19,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         self.host = host #Host gateway
         self.port = port #Port gateway
         self.url_queue = f"{host_url_queue}:{port_url_queue}"
-        self.gateway_file = f"gateway_data_{self.host}_{self.port}.json" #Ficheiro para guardar data da gateway
+        self.gateway_file = f"app/googol_grcp/files/gateway_data_{self.host}_{self.port}.json" #Ficheiro para guardar data da gateway
         self.search_counter = {} #Data para estatitiscas
         self.response_times = {} #Data para estatitiscas
         self.index_sizes = {} #Data para estatitiscas

@@ -1,7 +1,6 @@
 from concurrent import futures
 import grpc
-import index_pb2
-import index_pb2_grpc
+from ..index_pb2 import index_pb2, index_pb2_grpc
 from google.protobuf import empty_pb2
 import threading
 import argparse
@@ -24,9 +23,9 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
         # Queue guardar a data a reenviar para as replicas se o multicast falhar
         self.pending_updates = queue.Queue()
         # File para guardar as palavras e url correspondentes
-        self.index_file_word = f"words_data_{self.host}_{self.port}.json"
+        self.index_file_word = f"app/googol_grcp/files/words_data_{self.host}_{self.port}.json"
         # File para guardar as url, title e quote de uma url especifica
-        self.index_file_urls = f"urls_data_{self.host}_{self.port}.json"
+        self.index_file_urls = f"app/googol_grcp/files/urls_data_{self.host}_{self.port}.json"
         self.load_data()
         self.replicas = []  # Guarda as replicas ativas
 

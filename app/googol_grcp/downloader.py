@@ -1,7 +1,6 @@
 import grpc
 from google.protobuf import empty_pb2
-import index_pb2
-import index_pb2_grpc
+from ..index_pb2 import index_pb2, index_pb2_grpc
 import requests
 from bs4 import BeautifulSoup as jsoup
 import re

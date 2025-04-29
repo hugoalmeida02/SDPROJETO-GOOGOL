@@ -1,6 +1,5 @@
 import grpc
-import index_pb2
-import index_pb2_grpc
+from ..index_pb2 import index_pb2, index_pb2_grpc
 from google.protobuf import empty_pb2
 
 # Definir a gateway a ligar

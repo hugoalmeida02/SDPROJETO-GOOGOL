@@ -38,20 +38,20 @@ Googol/
    python -m grpc_tools.protoc -I. --python_out=../ --grpc_python_out=../ index.proto
 
 2. Iniciar a Gateway
-   python gateway.py --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
+   python -m app.googol_grcp.gateway --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
 
 3. Iniciar a Url_queue
-   python url_queue.py --host_url_queue localhost --port_url_queue 8180
+   python -m app.googol_grcp.url_queue --host_url_queue localhost --port_url_queue 8180
 
 4. Iniciar um ou mais Index Barrels
-   python indexServer.py --host localhost --port 8123 --host_gateway localhost --port_gateway 8190
-   python indexServer.py --host localhost --port 8124 --host_gateway localhost --port_gateway 8190
+   python -m app.googol_grcp.indexServer --host localhost --port 8123 --host_gateway localhost --port_gateway 8190
+   python -m app.googol_grcp.indexServer --host localhost --port 8124 --host_gateway localhost --port_gateway 8190
 
 5. Iniciar os Downloaders (um ou mais)
-   python downloader.py --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
+   python -m app.googol_grcp.downloader --host_gateway localhost --port_gateway 8190 --host_url_queue localhost --port_url_queue 8180
 
 6. Iniciar o Cliente
-   python client.py --host_gateway localhost --port_gateway 8190
+   python -m app.googol_grcp.client --host_gateway localhost --port_gateway 8190
 
 Os valores para execução são só exemplos.
 

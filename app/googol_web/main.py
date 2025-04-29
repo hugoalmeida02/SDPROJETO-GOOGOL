@@ -4,13 +4,13 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import asyncio
 
-from grpc_client import put_new_url, search_words, get_system_stats
+from .grpc_client import put_new_url, search_words, get_system_stats
 
 app = FastAPI()
 
 # Diretórios para templates e ficheiros estáticos
-templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="app/googol_web/templates")
+app.mount("/static", StaticFiles(directory="app/googol_web/static"), name="static")
 
 # Lista para guardar WebSocket connections
 websocket_connections = []
@@ -45,7 +45,7 @@ async def add_url(request: Request, payload: dict = Body(...)):
 async def search(request: Request, words: str):
     print(f"🔎 Pesquisa recebida: {words}")
     urls = search_words(words)
-    return templates.TemplateResponse("results.html", {"request": request, "words": words})
+    return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls})
 
 
 if __name__ == "__main__":

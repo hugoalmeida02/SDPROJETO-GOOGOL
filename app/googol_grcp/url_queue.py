@@ -1,5 +1,4 @@
-import index_pb2
-import index_pb2_grpc
+from ..index_pb2 import index_pb2, index_pb2_grpc
 import grpc
 from google.protobuf import empty_pb2
 from concurrent import futures
@@ -17,7 +16,7 @@ class QueueService(index_pb2_grpc.IndexServicer):
         self.host = host  # Host queue
         self.port = port  # Host port
         # Ficheiro para guardar a informação na queue
-        self.url_queue_file = f"url_queue_{self.host}_{self.port}.json"
+        self.url_queue_file = f"app/googol_grcp/files/url_queue_{self.host}_{self.port}.json"
         self.queue = []
         self.lock = threading.Lock()
         self.load_data()
