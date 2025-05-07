@@ -66,16 +66,17 @@ async def add_url(request: Request, payload: dict = Body(...)):
 async def search(request: Request, words: str):
     print(f"Pesquisa recebida: {words}")
     urls = search_words(words)  # Faz a pesquisa real via gRPC
-    hn_stories = search_hackernews(words)  # Pesquisa Hacker News
-    openai_summary = get_openai_summary(words)  # Gera resumo OpenAI
-    return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls, "hn_stories": hn_stories, "openai_summary": openai_summary})
+    # hn_stories = search_hackernews(words)  # Pesquisa Hacker News
+    # openai_summary = get_openai_summary(words)  # Gera resumo OpenAI
+    return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls})
 
 
-@app.get("/backlinks", response_class=HTMLResponse)
+@app.get("/search_backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):
-    print(f"Pesquisa de backlinks para: {url}")
+    print(url)
     links = search_backlinks(url)  # Chamar o grpc_client
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": links})
+
 
 if __name__ == "__main__":
     import uvicorn
