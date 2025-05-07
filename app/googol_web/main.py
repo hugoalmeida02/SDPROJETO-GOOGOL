@@ -13,11 +13,11 @@ templates = Jinja2Templates(directory="app/googol_web/templates")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# @app.websocket("/ws")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     await websocket.send_text("Ligação WebSocket estabelecida.")
-#     await websocket.close()
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_text("Ligação WebSocket estabelecida.")
+    await websocket.close()
 
 @app.post("/add-url")
 async def add_url(request: Request, payload: dict = Body(...)):
