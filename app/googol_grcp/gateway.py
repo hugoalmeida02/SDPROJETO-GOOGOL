@@ -202,10 +202,14 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             
             with grpc.insecure_channel(address) as channel:
                 stub = index_pb2_grpc.IndexStub(channel)
-                index_response = stub.getFullIndex(empty_pb2.Empty())
-                self.index_sizes[address] = len(index_response.palavras)
+                index_response = stub.getIndexlen(empty_pb2.Empty())
+                if address not in self.index_sizes:
+                    self.index_sizes[address] = {}
+                self.index_sizes[address]["words"] = index_response.lenIndexWords
+                self.index_sizes[address]["urls"] = index_response.lenIndexUrls
                 
-            barrel.index_size = self.index_sizes.get(address, 0)
+            barrel.index_size_words = self.index_sizes.get(address, {}).get("words", 0)
+            barrel.index_size_urls = self.index_sizes.get(address, {}).get("urls", 0)
             tempos = self.response_times.get(address, [])
             barrel.avg_response_time = round(sum(tempos) / len(tempos), 3) if tempos else 0.0
 

@@ -74,7 +74,7 @@ def run(host_gateway, port_gateway):
                         print("\nIndex Barrels ativos:")
                         for barrel in response.barrels:
                             print(
-                                f"{barrel.address} — Entradas: {barrel.index_size} — {barrel.avg_response_time:.3f} décimas")
+                                f"{barrel.address} — Entradas palavras: {barrel.index_size_words} — Entradas Backlings: {barrel.index_size_urls} — {barrel.avg_response_time:.3f} décimas")
                     else:
                         print("\nNenhum Index Barrels ativo.")
                 elif option == "5":

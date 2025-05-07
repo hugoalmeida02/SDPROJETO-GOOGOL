@@ -298,6 +298,11 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
 
         return index_pb2.FullIndexResponse(palavras=entries_palavras, urls=entries_urls)
 
+    def getIndexlen(self, request, context):
+        lenWords = len(self.words_data)
+        lenBakclinks = len(self.urls_data)
+        return index_pb2.IndexLens(lenIndexWords=lenWords, lenIndexUrls=lenBakclinks)
+
 
 def run(host, port, host_gateway, port_gateway):
     try:
