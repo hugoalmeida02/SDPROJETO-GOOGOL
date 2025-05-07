@@ -26,29 +26,14 @@
 //     e.preventDefault();
 //     const words = document.getElementById("search-input").value;
 
-//     const response = await fetch(`/search?words=${encodeURIComponent(words)}`);
-//     if (response.ok) {
-//         const html = await response.text();
-//         document.body.innerHTML = html;
-//     } else {
-//         alert("Erro ao realizar pesquisa.");
-//     }
+//     window.location.href = `/search?words=${encodeURIComponent(words)}`;
 // });
 
 // Submeter consulta de backlinks
 const formBacklinks = document.getElementById("form-backlink");
 formBacklinks.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const url = document.getElementById("backlink-input").value;
+  e.preventDefault();
+  const url = document.getElementById("backlink-input").value;
 
-    const response = await fetch(`/search_backlinks?url=${encodeURIComponent(url)}`);
-    if (response.ok) {
-        const html = await response.text();
-        document.body.innerHTML = html;
-    } else {
-        alert("Erro ao realizar consulta.");
-    }
+  window.location.href = `/search-backlinks?url=${encodeURIComponent(url)}`;
 });
-
-
-
