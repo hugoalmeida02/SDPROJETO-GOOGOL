@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, WebSocket, Request, Body
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -12,6 +12,12 @@ templates = Jinja2Templates(directory="app/googol_web/templates")
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+# @app.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket):
+#     await websocket.accept()
+#     await websocket.send_text("Ligação WebSocket estabelecida.")
+#     await websocket.close()
 
 @app.post("/add-url")
 async def add_url(request: Request, payload: dict = Body(...)):
@@ -36,8 +42,3 @@ async def backlinks(request: Request, url: str):
     print(f"Consulta recebida: {url}")
     backlinks = search_backlinks(url)  # Faz a pesquisa real via gRPC
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
