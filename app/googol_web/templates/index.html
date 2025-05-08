@@ -69,29 +69,6 @@
 
         window.location.href = `/search-backlinks?url=${encodeURIComponent(url)}`;
         });
-
-        // WebSocket para estatísticas em tempo real
-        const statsSocket = new WebSocket("ws://localhost:8000/ws");
-
-        statsSocket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const statsDiv = document.getElementById("stats");
-
-            let html = `<h3>Top 10 pesquisas</h3><ul>`;
-            data.top_queries.forEach(([term, count]) => {
-                html += `<li>${term} (${count} vezes)</li>`;
-            });
-            html += `</ul><h3>Index Barrels</h3><ul>`;
-            data.barrels.forEach(b => {
-                html += `<li>${b.address} — Words: ${b.index_size_words}, URLs: ${b.index_size_urls}, Tempo médio: ${b.avg_response_time}</li>`;
-            });
-            html += `</ul>`;
-
-            statsDiv.innerHTML = html;
-        };
-
-        statsSocket.onopen = () => console.log("🟢 WebSocket conectado.");
-        statsSocket.onclose = () => console.log("🔴 WebSocket desconectado.");
     </script>
 </body>
 </html>

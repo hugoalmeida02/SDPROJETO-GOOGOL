@@ -32,8 +32,8 @@ formSearch.addEventListener("submit", async (e) => {
 // Submeter consulta de backlinks
 const formBacklinks = document.getElementById("form-backlink");
 formBacklinks.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const url = document.getElementById("backlink-input").value;
+e.preventDefault();
+const url = document.getElementById("backlink-input").value;
 
-  window.location.href = `/search-backlinks?url=${encodeURIComponent(url)}`;
+window.location.href = `/search-backlinks?url=${encodeURIComponent(url)}`;
 });
