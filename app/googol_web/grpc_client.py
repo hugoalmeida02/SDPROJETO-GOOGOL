@@ -30,6 +30,8 @@ def search_backlinks(url):
 
 def get_system_stats():
     """ Vai buscar as estatísticas do sistema à Gateway """
+    
     stub = get_gateway_stub()
     response = stub.getStats(empty_pb2.Empty())
+    print(response)
     return response
