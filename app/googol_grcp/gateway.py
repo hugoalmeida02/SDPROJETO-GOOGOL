@@ -8,11 +8,15 @@ import time
 import threading
 import json
 import os
+from fastapi import WebSocket
+import asyncio
 
 MAX_INDEX_BARRELS = 3 #Número máximo de barrels
 CHECK_INTERVAL = 5  # Intervalo para verificar replicas ativas
 FAILURE_THRESHOLD = 3 #Número máximo de vezes que um barrel pode falhar
 SAVE_INTERVAL = 5 # Intervalo para auto save à data
+
+clients: list[WebSocket] = []
 
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, host, port, host_url_queue, port_url_queue):
@@ -28,7 +32,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         
         threading.Thread(target=self.auto_save, daemon=True).start() # Thread para guarda a data periodicamente
         threading.Thread(target=self.check_index_servers, daemon=True).start() # Thread para manter a informacao sobre os barrels ativos
-
+        threading.Thread(target=self.update_stats_loop, daemon=True).start()
+        
     def load_data(self):
         """Carrega os dados do ficheiro JSON ou cria ficheiro vazio se não existir."""
         if os.path.exists(self.gateway_file):
@@ -115,7 +120,48 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                     print(f"Removido Index Server inativo: {address}")
                     del self.index_barrels[address]
             
-            
+    def update_stats_loop(self):
+        last_sent_sizes = {}
+        while True:
+            time.sleep(5)
+            updated = False
+            stats_to_send = {
+                "type": "stats",
+                "top_queries": sorted(self.search_counter.items(), key=lambda x: x[1], reverse=True)[:10],
+                "barrels": []
+            }
+            for address in self.index_barrels:
+                try:
+                    with grpc.insecure_channel(address) as channel:
+                        stub = index_pb2_grpc.IndexStub(channel)
+                        index_response = stub.getIndexlen(empty_pb2.Empty())
+                        current_sizes = {
+                            "words": index_response.lenIndexWords,
+                            "urls": index_response.lenIndexUrls
+                        }
+                        if address not in last_sent_sizes or last_sent_sizes[address] != current_sizes:
+                            updated = True
+                            last_sent_sizes[address] = current_sizes
+                        tempos = self.response_times.get(address, [])
+                        stats_to_send["barrels"].append({
+                            "address": address,
+                            "index_size_words": current_sizes["words"],
+                            "index_size_urls": current_sizes["urls"],
+                            "avg_response_time": round(sum(tempos) / len(tempos), 3) if tempos else 0.0
+                        })
+                except grpc.RpcError:
+                    continue
+            if updated:
+                asyncio.run(self.notify_clients(stats_to_send))
+
+    async def notify_clients(self, data):
+        msg = json.dumps(data)
+        for ws in clients:
+            try:
+                await ws.send_text(msg)
+            except:
+                continue
+                    
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         termos = request.words.strip().lower()
