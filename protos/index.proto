@@ -16,7 +16,7 @@ service Index {
     rpc getIndexBarrels (google.protobuf.Empty) returns (IndexBarrelInfo);
     rpc getStats(google.protobuf.Empty) returns (SystemStats);
     rpc updateIndexSize(IndexSizeUpdateRequest) returns (google.protobuf.Empty);
-    rpc SendStats (BarrelStats) returns (google.protobuf.Empty);
+    rpc SendStats (SystemStats) returns (google.protobuf.Empty);
     rpc startSendingStatistics (WebServerInfo) returns (google.protobuf.Empty);
 }
 

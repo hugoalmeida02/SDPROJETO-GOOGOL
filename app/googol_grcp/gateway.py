@@ -81,7 +81,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             return index_pb2.ValidRegister(valid=True)
 
     def startSendingStatistics(self, request, context):
-        
         self.web_sever = f"{request.host}:{request.port}"
         self.send_statistics = True
         return empty_pb2.Empty()

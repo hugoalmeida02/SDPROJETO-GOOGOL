@@ -4,6 +4,9 @@ from google.protobuf import empty_pb2
 import argparse
 from concurrent import futures
 import time
+from .websockets import broadcast_message
+import asyncio
+import json
 
 # Cliente gRPC para comunicação com a Gateway
 class WebSever(index_pb2_grpc.IndexServicer):
@@ -43,7 +46,27 @@ class WebSever(index_pb2_grpc.IndexServicer):
         self.gateway_stub.startSendingStatistics(index_pb2.WebServerInfo(host=self.host, port=self.port))
     
     def SendStats(self, request, context):
-        print(request)
+        stats = {
+        "type": "stats",
+        "top_queries": list(request.top_queries),
+        "barrels": [
+            {
+                "ip": barrel.address,
+                "size_words": barrel.index_size_words,
+                "size_urls": barrel.index_size_urls 
+            }
+            for barrel in request.barrels
+        ],
+        "avg_response_times": {
+            barrel.address: barrel.avg_response_time
+            for barrel in request.barrels
+        }
+        }
+        print(stats)
+        
+        json_data = json.dumps(stats)
+
+        asyncio.run(broadcast_message(json_data))  
         return empty_pb2.Empty()
 
 def run(host, port, host_gateway, port_gateway):

@@ -5,7 +5,6 @@ function connect() {
 
     socket.onopen = () => {
         console.log("Connected to plain WebSocket");
-        setConnected(true);
     };
 
     socket.onmessage = (event) => {
@@ -28,7 +27,6 @@ function connect() {
 
     socket.onclose = () => {
         console.log("Disconnected from WebSocket");
-        setConnected(false);
     };
 }
 
