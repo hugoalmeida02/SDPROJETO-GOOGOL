@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Googol</title>
+    <title>Googol</title>   
 </head>
 <body>
     <h1>Bem-vindo ao Googol!</h1>
@@ -28,14 +28,13 @@
 
     <h2>Estatísticas em tempo real</h2>
     <div id="stats"></div>
-
-    <script>
-        // Submeter novo URL para indexação
+    <script src="/static/scripts.js"></script>
+    <!-- <script>// Submeter novo URL para indexação
         const formUrl = document.getElementById("form-url");
         formUrl.addEventListener("submit", async (e) => {
             e.preventDefault();
             const url = document.getElementById("url-input").value;
-
+        
             const response = await fetch("/add-url", {
                 method: "POST",
                 headers: {
@@ -43,7 +42,7 @@
                 },
                 body: JSON.stringify({ url: url })
             });
-
+        
             if (response.ok) {
                 alert("URL adicionado com sucesso!");
                 document.getElementById("url-input").value = "";
@@ -51,24 +50,25 @@
                 alert("Erro ao adicionar URL.");
             }
         });
-
+        
         // Submeter pesquisa de termos
         const formSearch = document.getElementById("form-search");
         formSearch.addEventListener("submit", async (e) => {
             e.preventDefault();
             const words = document.getElementById("search-input").value;
-
+        
             window.location.href = `/search?words=${encodeURIComponent(words)}`;
         });
-
+        
         // Submeter consulta de backlinks
         const formBacklinks = document.getElementById("form-backlink");
         formBacklinks.addEventListener("submit", async (e) => {
         e.preventDefault();
         const url = document.getElementById("backlink-input").value;
-
+        
         window.location.href = `/search-backlinks?url=${encodeURIComponent(url)}`;
         });
-    </script>
+        </script> -->
+    <!-- <script src="/static/websocket.js"></script> -->
 </body>
 </html>

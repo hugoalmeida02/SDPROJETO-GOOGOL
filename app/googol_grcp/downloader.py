@@ -35,7 +35,7 @@ def run(host_gateway, port_gateway, host_url_queue, port_url_queue):
     gateway_channel = grpc.insecure_channel(
         f"{host_gateway}:{port_gateway}")  # Conectar à gateway
     gateway_stub = index_pb2_grpc.IndexStub(gateway_channel)
-
+    
     while True:
         try:
             try:

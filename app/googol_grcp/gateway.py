@@ -15,7 +15,6 @@ CHECK_INTERVAL = 5  # Intervalo para verificar replicas ativas
 FAILURE_THRESHOLD = 3 #Número máximo de vezes que um barrel pode falhar
 SAVE_INTERVAL = 5 # Intervalo para auto save à data
 
-
 class GatewayServicer(index_pb2_grpc.IndexServicer):
     def __init__(self, host, port, host_url_queue, port_url_queue):
         self.host = host #Host gateway
@@ -27,10 +26,10 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         self.index_sizes = {} #Data para estatitiscas
         self.load_data()
         self.lock = threading.Lock()
+        self.send_statistics = True
         
         threading.Thread(target=self.auto_save, daemon=True).start() # Thread para guarda a data periodicamente
         threading.Thread(target=self.check_index_servers, daemon=True).start() # Thread para manter a informacao sobre os barrels ativos
-        
         
     def load_data(self):
         """Carrega os dados do ficheiro JSON ou cria ficheiro vazio se não existir."""
@@ -81,6 +80,12 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 self.index_barrels[address] = {"failures": 0}
             return index_pb2.ValidRegister(valid=True)
 
+    def startSendingStatistics(self, request, context):
+        
+        self.web_sever = f"{request.host}:{request.port}"
+        self.send_statistics = True
+        return empty_pb2.Empty()
+    
     def getIndexBarrels(self, request, context):
         """ Informa acerca dos Index Barrels ativos """
         response = []
@@ -117,12 +122,33 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 for address in to_remove:
                     print(f"Removido Index Server inativo: {address}")
                     del self.index_barrels[address]
-                           
+    
+    
+    def updateIndexSize(self, request, context):
+        address = f"{request.host}:{request.port}"
+        with self.lock:
+            self.index_sizes[address] = {
+                "words": request.lenIndexWords,
+                "urls": request.lenIndexUrls
+            }
+        
+        if self.send_statistics == True:
+            # responde = self.getStats()
+            channel = grpc.insecure_channel(self.web_sever)
+            try:
+                stub = index_pb2_grpc.IndexStub(channel)
+                stub.SendStats(self.stats())
+            except grpc.RpcError as e:
+                print(f"RPC failed: {e.code()}")
+                print(f"RPC error details: {e.details()}")
+        
+        return empty_pb2.Empty()
+               
     def searchWord(self, request, context):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         termos = request.words.strip().lower()
         self.search_counter[termos] = self.search_counter.get(termos, 0) + 1
-        
+          
         active_servers = [barrel for barrel in self.index_barrels.keys()]
         random.shuffle(active_servers)
         results = []
@@ -145,7 +171,17 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             except grpc.RpcError as e:
                 print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
-
+            
+        if self.send_statistics == True:
+            # responde = self.getStats()
+            channel = grpc.insecure_channel(self.web_sever)
+            try:
+                stub = index_pb2_grpc.IndexStub(channel)
+                stub.SendStats(self.stats())
+            except grpc.RpcError as e:
+                print(f"RPC failed: {e.code()}")
+                print(f"RPC error details: {e.details()}")
+            
         return index_pb2.SearchWordResponse(urls=results)
 
     def searchBacklinks(self, request, context):
@@ -173,7 +209,17 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             except grpc.RpcError as e:
                 print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
-
+        
+        if self.send_statistics == True:
+            # responde = self.getStats()
+            channel = grpc.insecure_channel(self.web_sever)
+            try:
+                stub = index_pb2_grpc.IndexStub(channel)
+                stub.SendStats(self.stats())
+            except grpc.RpcError as e:
+                print(f"RPC failed: {e.code()}")
+                print(f"RPC error details: {e.details()}")
+        
         return index_pb2.SearchBacklinksResponse(backlinks=results)
 
     def putNew(self, request, context):
@@ -188,10 +234,13 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
 
         return empty_pb2.Empty()
     
-    def getStats(self, request, context):
-        """ Retorna as estáticas """
-        response = index_pb2.SystemStats()
 
+    def getStats(self):
+        """ Retorna as estáticas """
+        return self.stats()
+    
+    def stats(self):
+        response = index_pb2.SystemStats()
         # Top 10 pesquisas
         sorted_queries = sorted(self.search_counter.items(), key=lambda x: x[1], reverse=True)[:10]
         for term, _ in sorted_queries:
@@ -201,22 +250,14 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         for address in self.index_barrels:
             barrel = response.barrels.add()
             barrel.address = address
-            
-            with grpc.insecure_channel(address) as channel:
-                stub = index_pb2_grpc.IndexStub(channel)
-                index_response = stub.getIndexlen(empty_pb2.Empty())
-                if address not in self.index_sizes:
-                    self.index_sizes[address] = {}
-                self.index_sizes[address]["words"] = index_response.lenIndexWords
-                self.index_sizes[address]["urls"] = index_response.lenIndexUrls
-                
+               
             barrel.index_size_words = self.index_sizes.get(address, {}).get("words", 0)
             barrel.index_size_urls = self.index_sizes.get(address, {}).get("urls", 0)
             tempos = self.response_times.get(address, [])
             barrel.avg_response_time = round(sum(tempos) / len(tempos), 3) if tempos else 0.0
-
+        
         return response
-
+        
 def run(host, port, host_url_queue, port_url_queue):
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

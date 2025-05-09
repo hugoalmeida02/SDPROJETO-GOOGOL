@@ -197,6 +197,19 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 self.pending_updates.put(
                     (param0, param1, param2, param3, tipo, replica))
 
+    def send_index_size_to_gateway(self):
+        len_words = len(self.words_data)
+        len_urls = len(self.urls_data)
+        try:
+            self.gateway_stub.updateIndexSize(index_pb2.IndexSizeUpdateRequest(
+                host=self.host,
+                port=self.port,
+                lenIndexWords=len_words,
+                lenIndexUrls=len_urls
+            ))
+        except grpc.RpcError:
+            print("❌ Falha ao enviar o tamanho do índice à Gateway")
+    
     def addToIndexWords(self, request, context):
         """ Adiciona as palavras dentro de uma página à data do index """
         with self.lock:
@@ -207,8 +220,10 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                     self.words_data[request.word].append(request.url)
 
         if not request.from_multicast:
+            self.send_index_size_to_gateway()
             threading.Thread(target=self.reliable_multicast, args=(
                 request.word, request.url, None, None, "words"), daemon=True).start()
+            
         return empty_pb2.Empty()
 
     def addToIndexLinks(self, request, context):
@@ -224,6 +239,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                 self.urls_data[request.url]["urls"].append(request.link)
 
         if not request.from_multicast:
+            self.send_index_size_to_gateway()
             threading.Thread(target=self.reliable_multicast, args=(
                 request.url, request.title, request.quote, request.link, "urls"), daemon=True).start()
         return empty_pb2.Empty()
@@ -297,12 +313,6 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                     entries_urls.append(entry)
 
         return index_pb2.FullIndexResponse(palavras=entries_palavras, urls=entries_urls)
-
-    def getIndexlen(self, request, context):
-        lenWords = len(self.words_data)
-        lenBakclinks = len(self.urls_data)
-        return index_pb2.IndexLens(lenIndexWords=lenWords, lenIndexUrls=lenBakclinks)
-
 
 def run(host, port, host_gateway, port_gateway):
     try:

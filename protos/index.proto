@@ -15,7 +15,9 @@ service Index {
     rpc registerIndexBarrel (IndexBarrelRequest) returns (ValidRegister);
     rpc getIndexBarrels (google.protobuf.Empty) returns (IndexBarrelInfo);
     rpc getStats(google.protobuf.Empty) returns (SystemStats);
-    rpc getIndexlen(google.protobuf.Empty) returns (IndexLens);
+    rpc updateIndexSize(IndexSizeUpdateRequest) returns (google.protobuf.Empty);
+    rpc SendStats (BarrelStats) returns (google.protobuf.Empty);
+    rpc startSendingStatistics (WebServerInfo) returns (google.protobuf.Empty);
 }
 
 message PutNewRequest {
@@ -97,9 +99,14 @@ message BarrelStats {
   float avg_response_time = 4; 
 }
 
-message IndexLens {
-  int32 lenIndexWords = 1;
-  int32 lenIndexUrls = 2;
+message IndexSizeUpdateRequest {
+  string host = 1;
+  string port = 2;
+  int32 lenIndexWords = 3;
+  int32 lenIndexUrls = 4;
 }
 
-
+message WebServerInfo {
+    string host = 1;
+    string port = 2;
+}
