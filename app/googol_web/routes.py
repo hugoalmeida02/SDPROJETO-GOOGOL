@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from .webserver import WebSever
 from .websockets import add_client, remove_client
-
+from .utils.openai_api import generate_analysis
 import asyncio
 from typing import Dict, Set
 import threading
@@ -37,15 +37,18 @@ async def add_url(request: Request, payload: dict = Body(...)):
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request, words: str):
     print(f"Pesquisa recebida: {words}")
-    urls = webserver.search_words(words)  # Faz a pesquisa real via gRPC
+    urls = webserver.search_words(words)
+    openai_summary = await generate_analysis(words)
+    print(openai_summary)
     return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls})
 
 
 @router.get("/search-backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):
     print(f"Consulta recebida: {url}")
-    backlinks = webserver.search_backlinks(url)  # Faz a pesquisa real via gRPC
+    backlinks = webserver.search_backlinks(url)
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
+        
         
 @router.websocket("/websocket")
 async def websocket_endpoint(websocket: WebSocket):

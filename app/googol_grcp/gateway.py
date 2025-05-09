@@ -83,6 +83,13 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
     def startSendingStatistics(self, request, context):
         self.web_sever = f"{request.host}:{request.port}"
         self.send_statistics = True
+        channel = grpc.insecure_channel(self.web_sever)
+        try:
+            stub = index_pb2_grpc.IndexStub(channel)
+            stub.SendStats(self.stats())
+        except grpc.RpcError as e:
+            print(f"RPC failed: {e.code()}")
+            print(f"RPC error details: {e.details()}")
         return empty_pb2.Empty()
     
     def getIndexBarrels(self, request, context):
@@ -132,7 +139,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             }
         
         if self.send_statistics == True:
-            # responde = self.getStats()
             channel = grpc.insecure_channel(self.web_sever)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)

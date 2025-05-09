@@ -1,25 +1,24 @@
-import requests
+import openai
+from fastapi import HTTPException
+import os
 
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_API_KEY = "AQUI_O_TEU_TOKEN_OPENAI"  # ⚠️ Substituir pelo teu Token
+# Definir a chave da API da OpenAI (pode ser armazenada em variáveis de ambiente)
+# openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = "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"
 
-def get_openai_summary(terms):
-    """Gera uma resposta/resumo usando o modelo GPT."""
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "gpt-3.5-turbo",
-        "messages": [
-            {"role": "system", "content": "Responde de forma breve e objetiva."},
-            {"role": "user", "content": f"Faz uma análise breve dos seguintes termos de pesquisa: {terms}"}
-        ]
-    }
+async def generate_analysis(search_terms: str):
+    # Formatar a consulta para enviar à OpenAI
+    prompt = f"Faça uma análise sobre os seguintes termos de pesquisa: {search_terms}. "
+    prompt += "Forneça uma análise contextualizada sobre os termos."
+
     try:
-        response = requests.post(OPENAI_API_URL, headers=headers, json=data)
-        result = response.json()
-        return result["choices"][0]["message"]["content"]
+        # Chamada à API da OpenAI para gerar uma resposta contextualizada
+        response = openai.Completion.create(
+            engine="gpt-4o",  # Ou outro modelo da OpenAI (ex: gpt-3.5-turbo)
+            prompt=prompt,
+            max_tokens=500,
+            temperature=0.7  # Controla a criatividade da resposta
+        )
+        return response.choices[0].text.strip()
     except Exception as e:
-        print(f"Erro ao consultar OpenAI: {e}")
-        return "Não foi possível gerar a análise."
+        raise HTTPException(status_code=500, detail=str(e))
