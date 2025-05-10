@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, Body, WebSocket
+from fastapi import APIRouter, Request, Body, WebSocket, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from .webserver import WebSever
 from .websockets import add_client, remove_client
 from .utils.openai_api import generate_analysis
+from .utils.hackernews_api import index_user_stories, index_top_stories
 import asyncio
 from typing import Dict, Set
 import threading
@@ -38,8 +39,8 @@ async def add_url(request: Request, payload: dict = Body(...)):
 async def search(request: Request, words: str):
     print(f"Pesquisa recebida: {words}")
     urls = webserver.search_words(words)
-    openai_summary = await generate_analysis(words)
-    print(openai_summary)
+    # openai_summary = await generate_analysis(words)
+    # return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls, "summary": openai_summary})
     return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls})
 
 
@@ -49,7 +50,37 @@ async def backlinks(request: Request, url: str):
     backlinks = webserver.search_backlinks(url)
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
         
-        
+
+@router.post("/index_hackernews_urls")
+async def index_hackernews_urls(request: Request):
+    search_terms = request.query_params.get('words', '').split()
+    
+    # Chama a função que já criaste para pegar as "top stories" e filtrar
+    urls = index_top_stories(search_terms)
+
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "words": search_terms,
+        "urls": urls,
+        "summary": "Análise gerada pela IA."
+    })
+
+
+@router.post("/index_hackernews_urls_user")
+async def index_hackernews_urls_user(request: Request, user_id: str = Form(...), ):
+    search_terms = request.query_params.get('words', '').split()
+    
+    # Chama a função que já criaste para pegar as stories de um utilizador e filtrar
+    urls = index_user_stories(user_id, search_terms)
+    
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "words": search_terms,
+        "urls": urls,
+        "summary": "Análise gerada pela IA."
+    })
+
+
 @router.websocket("/websocket")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

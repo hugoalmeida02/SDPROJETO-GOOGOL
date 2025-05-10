@@ -23,24 +23,27 @@
     {% endif %}
 
     <hr>
-
-    {% if hn_stories %}
-        <h2>Notícias Relacionadas (HackerNews)</h2>
-        <ul>
-        {% for story in hn_stories %}
-            <li>
-                <a href="{{ story.url }}" target="_blank">{{ story.title }}</a>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>Nenhuma notícia relacionada encontrada.</p>
-    {% endif %}
-
-    <hr>
     
     <h3>Análise Contextualizada Gerado pela IA (OpenAI)</h3>
-    <p>{{ openai_summary }}</p>
+    <p>{{ summary }}</p>
+
+    <h3>Indexação de URLs no Hacker News</h3>
+    
+    <!-- Formulário para indexar as top stories -->
+    <form action="/index_hackernews_urls" method="post">
+        <h4>Indexar Top Stories do Hacker News com os termos "{{ words }}"</h4>
+        <button type="submit">Indexar Top Stories</button>
+    </form>
+
+    <br>
+
+    <!-- Formulário para indexar as histórias de um utilizador específico -->
+    <form action="/index_hackernews_urls_user" method="post">
+        <h4>Indexar suas Histórias do Hacker News</h4>
+        <label for="user_id">ID de utilizador:</label>
+        <input type="text" id="user_id" name="user_id" required>
+        <button type="submit">Indexar Histórias</button>
+    </form>
 
     <br>
     <a href="/">Voltar</a>

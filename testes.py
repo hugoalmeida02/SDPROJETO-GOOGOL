@@ -18,7 +18,7 @@ def get_user_stories(user_id):
     return []
 
 def get_story_details(story_id):
-    url = f'https://hacker-news.firebaseio.com/v0/item/{story_id}.json?print=pretty'
+    url = f'https://hacker-news.firebaseio.com/v0/item/8863.json?print=pretty'
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()  # Detalhes da história, incluindo URL
@@ -37,3 +37,31 @@ def index_story_urls(filtered_stories):
         if 'url' in story:
             urls.append(story['url'])
     return urls
+
+
+def index_top_stories(search_terms):
+    # Aqui obtens as top stories com base nos teus critérios
+    story_ids = get_top_stories()
+    stories = []
+    
+    for story_id in story_ids[:50]:  # Limitar para as top 10
+        story_details = get_story_details(story_id)
+        if story_details:
+            stories.append(story_details)
+
+    filtered_stories = filter_stories_by_terms(stories, search_terms)
+    return index_story_urls(filtered_stories)
+
+def index_user_stories(user_id):
+    # Obter as histórias do utilizador com base no ID fornecido
+    story_ids = get_user_stories(user_id)
+    stories = []
+    
+    for story_id in story_ids:  # Limitar para as top 10
+        story_details = get_story_details(story_id)
+        if story_details:
+            stories.append(story_details)
+
+    return index_story_urls(stories)
+
+print(get_story_details(43933580))
