@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Resultados da Pesquisa</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 
 <body>
@@ -18,7 +18,10 @@
       <button id="generate-analysis-btn">Gerar Análise da Pesquisa</button>
       <p id="tool-msg"></p>
     </section>
-
+    <div id="analysis-container" style="display: none;">
+        <h2>Análise Gerada:</h2>
+        <p id="analysis-content">A gerar a tua resposta...</p>
+    </div>
     <div id="results-container">
       {% if urls %}
       {% for item in urls %}
@@ -41,6 +44,42 @@
         {% endif %}
     </div>
   </main>
+  <script>
+    document.getElementById("generate-analysis-btn").addEventListener("click", async function() {
+            const searchTerms = "{{ words }}"; // Passa os termos do Jinja2 para o JavaScript
+            
+            try {
+                // Adicionar a análise no início da página sem modificar o resto do conteúdo
+                const analysisContainer = document.getElementById("analysis-container");
+                const analysisContent = document.getElementById("analysis-content");
+
+                // Mostrar a análise na página
+                analysisContainer.style.display = "block";
+
+
+                const response = await fetch("/generate_analysis", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ search_terms: searchTerms })
+                });
+
+                // Verifica se a resposta foi bem-sucedida
+                if (!response.ok) {
+                    analysisContent.textContent = "Erro ao gerar a análise"
+                    throw new Error("Erro ao gerar a análise");
+                }
+
+                const data = await response.json();
+                const analysisText = data.analysis;
+                
+                analysisContent.textContent = analysisText;
+            } catch (error) {
+                console.error("Erro ao gerar a análise:", error);
+            }
+        });
+  </script>
 </body>
 
 </html>

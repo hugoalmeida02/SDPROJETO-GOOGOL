@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Body, WebSocket, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .webserver import WebSever
@@ -54,13 +54,24 @@ async def search(request: Request, words: str, page: int = 1):
         "total_pages": total_pages
     })
     
+# Endpoint para gerar a análise com base nos termos de pesquisa
 @router.post("/generate_analysis")
-async def generate_analysis_endepoint(request):
+async def generate_analysis_endpoint(request: Request):
     try:
-        analysis = generate_analysis(request.search_terms)
-        return {"analysis": analysis}
+        data = await request.json()
+        search_terms = data.get("search_terms")
+        
+        if not search_terms:
+            return JSONResponse(status_code=400, content={"error": "search_terms são obrigatórios"})
+        
+        # Simulação de análise (substitua com lógica real)
+        analysis = f"Analisando os seguintes termos: {search_terms}"
+        # analysis = await generate_analysis(search_terms)
+
+        return JSONResponse(content={"analysis": analysis})
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(status_code=500, content={"error": f"Erro ao gerar a análise: {str(e)}"})
     
 @router.get("/search-backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):

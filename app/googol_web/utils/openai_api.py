@@ -1,4 +1,5 @@
 from openai import OpenAI
+from fastapi import HTTPException
 
 client = OpenAI(api_key="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")
 
