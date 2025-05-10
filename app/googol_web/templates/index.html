@@ -1,106 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Googol</title>
+  <meta charset="UTF-8" />
+  <title>Googol</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/index.js"></script>
+  <script src="/static/websocket.js"></script>
 </head>
 
 <body>
-    <h1>Bem-vindo ao Googol!</h1>
+  <header>
+    <h1>Googol</h1>
+  </header>
 
-    <h2>Adicionar URL para indexação</h2>
-    <form id="form-url">
-        <input type="text" id="url-input" placeholder="Insere o URL aqui" required>
-        <button type="submit">Adicionar</button>
+  <main>
+    <form id="search-form" class="search-box">
+      <input type="text" id="search-input" placeholder="Insere a palavra ou URL..." required />
+      <select id="search-type">
+        <option value="word">Pesquisa por palavra</option>
+        <option value="backlinks">Pesquisa de backlinks</option>
+      </select>
+      <button type="submit">Pesquisar</button>
     </form>
 
-    <h2>Pesquisar termos</h2>
-    <form id="form-search">
-        <input type="text" id="search-input" placeholder="Insere os termos de pesquisa" required>
-        <button type="submit">Pesquisar</button>
-    </form>
+    <button id="open-stats-btn">Ver estatísticas</button>
 
-    <h2>Consultar backlinks de um URL</h2>
-    <form id="form-backlink">
-        <input type="text" id="backlink-input" placeholder="Insere o url para consulta" required>
-        <button type="submit">Pesquisar</button>
-    </form>
+    <div id="stats-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="close-stats-btn">&times;</span>
+        <h2>Estatísticas</h2>
+        <div id="stats" class="stats-section"></div>
+      </div>
+    </div>
+    
+    <section id="add-user-stories">
+      <h2>Adicionar Stories de um Utilizador</h2>
+      <form id="add-user-stories-form">
+        <input type="text" id="hn-user-id" placeholder="ID do Utilizador Hacker News (ex: johndoe)" required />
+        <button type="submit">Adicionar Stories</button>
+      </form>
+      <p id="add-user-stories-msg"></p>
+    </section>
 
-    <h2>Estatísticas em tempo real</h2>
-    <div id="stats"></div>
-    <script src="/static/scripts.js"></script>
-    <script>let socket = null;
+  </main>
+  <script>
+        document
+      .getElementById("search-form")
+      .addEventListener("submit", function (event) {
+        event.preventDefault(); // evita recarregamento
+        const query = document.getElementById("search-input").value.trim();
+        const type = document.getElementById("search-type").value;
 
-        function connect() {
-            socket = new WebSocket("ws://" + window.location.host + "/websocket");
+        const encoded = encodeURIComponent(query);
 
-            socket.onopen = () => {
-                console.log("Connected to plain WebSocketaaaaaa");
-                // Recupera as estatísticas do localStorage, se existirem
-                const savedStats = localStorage.getItem("stats");
-                if (savedStats) {
-                    updateStats(JSON.parse(savedStats));
-                }
-            };
-
-            socket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-
-                    if (data.type === "stats") {
-                        updateStats(data);
-                    } else {
-                        console.log("Mensagem desconhecida:", data);
-                    }
-                } catch (e) {
-                    console.error("Erro ao processar mensagem:", e);
-                }
-            };
-
-            socket.onerror = (event) => {
-                console.error("WebSocket error", event);
-            };
-
-            socket.onclose = () => {
-                console.log("Disconnected from WebSocket");
-            };
+        if (type === "word") {
+          window.location.href = `/search?words=${encoded}`;
+        } else {
+          window.location.href = `/search-backlinks?url=${encoded}`;
         }
+      });
 
-        function updateStats(data) {
-            const statsDiv = document.getElementById("stats");
+    // Abrir e fechar modal
+    document.getElementById("open-stats-btn").addEventListener("click", () => {
+      document.getElementById("stats-modal").style.display = "block";
+    });
 
-            statsDiv.innerHTML = `
-        <h3>Top 10 pesquisas</h3>
-        <ul>${data.top_queries.map((q) => `<li>${q}</li>`).join("")}</ul>
+    document.getElementById("close-stats-btn").addEventListener("click", () => {
+      document.getElementById("stats-modal").style.display = "none";
+    });
 
-        <h3>Barrels ativos</h3>
-        <ul>${data.barrels
-                    .map(
-                        (b) => `<li>
-                ${b.ip} - 
-                Palavras indexadas: ${b.size_words} | 
-                URLs indexados: ${b.size_urls} |
-                Tempo médio de resposta: ${b.avg_response_time} s
-            </li>`
-                    )
-                    .join("")}</ul>
-
-        <h3>Tempo médio de resposta (décimas de segundo)</h3>
-        <ul>${Object.entries(data.avg_response_times)
-                    .map(([ip, t]) => `<li>${ip}: ${t}</li>`)
-                    .join("")}</ul>
-    `;
-
-            // Salvar as estatísticas no localStorage
-            localStorage.setItem("stats", JSON.stringify(data));
-        }
-
-        window.addEventListener("load", () => {
-            connect(); // Estabelece ligação ao WebSocket para stats
-        });
-    </script>
+    // Fechar ao clicar fora do conteúdo do modal
+    window.addEventListener("click", function (event) {
+      const modal = document.getElementById("stats-modal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  </script>
 </body>
-
 </html>

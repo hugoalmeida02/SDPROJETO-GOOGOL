@@ -1,26 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backlinks</title>
+  <meta charset="UTF-8" />
+  <title>Backlinks da Página</title>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
+
 <body>
-    <h1>Backlinks para: "{{ url }}"</h1>
+  <header>
+    <h1>Backlinks da Página</h1>
+  </header>
 
-    {% if backlinks %}
-        <ul>
-        {% for link in backlinks %}
-            <li>
-                <a href="{{ link }}" target="_blank">{{ link }}</a>
-            </li>
+  <main>
+    <div id="results-container">
+      {% if backlinks %}
+        {% for item in backlinks %}
+          <div class="result-item">
+            <h3><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h3>
+            <p>{{ item.snippet or item.url }}</p>
+          </div>
         {% endfor %}
-        </ul>
-    {% else %}
-        <p>Nenhum backlink encontrado.</p>
-    {% endif %}
-
-    <br>
-    <a href="/">Voltar</a>
+      {% else %}
+        <p>Nenhum backlink encontrado para {{ url }}.</p>
+      {% endif %}
+    </div>
+  </main>
 </body>
+
 </html>

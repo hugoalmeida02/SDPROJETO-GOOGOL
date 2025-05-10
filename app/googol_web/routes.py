@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Body, WebSocket, Form
+from fastapi import APIRouter, Request, Body, WebSocket, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -36,14 +36,32 @@ async def add_url(request: Request, payload: dict = Body(...)):
     
 
 @router.get("/search", response_class=HTMLResponse)
-async def search(request: Request, words: str):
-    print(f"Pesquisa recebida: {words}")
-    urls = webserver.search_words(words)
-    # openai_summary = await generate_analysis(words)
-    # return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls, "summary": openai_summary})
-    return templates.TemplateResponse("results.html", {"request": request, "words": words, "urls": urls})
+async def search(request: Request, words: str, page: int = 1):
+    results = webserver.search_words(words)
+    per_page = 10
 
+    # Paginação
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated = results[start:end]
+    total_pages = (len(results) + per_page - 1) // per_page
 
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "words": words,
+        "urls": paginated,
+        "current_page": page,
+        "total_pages": total_pages
+    })
+    
+@router.post("/generate_analysis")
+async def generate_analysis_endepoint(request):
+    try:
+        analysis = generate_analysis(request.search_terms)
+        return {"analysis": analysis}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @router.get("/search-backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):
     print(f"Consulta recebida: {url}")

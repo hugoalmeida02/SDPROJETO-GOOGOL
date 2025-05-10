@@ -1,51 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados da Pesquisa</title>
+  <meta charset="UTF-8" />
+  <title>Resultados da Pesquisa</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-    <h1>Resultados para: "{{ words }}"</h1>
+  <header>
+    <h1>Resultados da Pesquisa</h1>
+  </header>
 
-    {% if urls %}
-        <h2>Resultados do Googol</h2>
-        <ul>
-        {% for url_info in urls %}
-            <li>
-                <strong><a href="{{ url_info.url }}" target="_blank">{{ url_info.title }}</a></strong><br>
-                <em>{{ url_info.quote }}</em>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>Nenhum resultado encontrado no Googol.</p>
-    {% endif %}
+  <main>
+    <section id="tools">
+      <button id="index-top-stories-btn">Indexar Top Stories do Hacker News</button>
+      <button id="generate-analysis-btn">Gerar Análise da Pesquisa</button>
+      <p id="tool-msg"></p>
+    </section>
 
-    <hr>
-    
-    <h3>Análise Contextualizada Gerado pela IA (OpenAI)</h3>
-    <p>{{ summary }}</p>
+    <div id="results-container">
+      {% if urls %}
+      {% for item in urls %}
+      <div class="result-item">
+        <h3><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h3>
+        <p>{{ item.snippet or item.url }}</p>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p>Nenhum resultado encontrado.</p>
+      {% endif %}
+    </div>
 
-    <h3>Indexação de URLs no Hacker News</h3>
-    
-    <!-- Formulário para indexar as top stories -->
-    <form action="/index_hackernews_urls" method="post">
-        <h4>Indexar Top Stories do Hacker News com os termos "{{ words }}"</h4>
-        <button type="submit">Indexar Top Stories</button>
-    </form>
-
-    <br>
-
-    <!-- Formulário para indexar as histórias de um utilizador específico -->
-    <form action="/index_hackernews_urls_user" method="post">
-        <h4>Indexar suas Histórias do Hacker News</h4>
-        <label for="user_id">ID de utilizador:</label>
-        <input type="text" id="user_id" name="user_id" required>
-        <button type="submit">Indexar Histórias</button>
-    </form>
-
-    <br>
-    <a href="/">Voltar</a>
+    <div class="pagination">
+      {% if current_page > 1 %}
+      <a href="/search?words={{ words }}&page={{ current_page - 1 }}">← Anterior</a>
+      {% endif %}
+      <span>Página {{ current_page }} de {{ total_pages }}</span>
+      {% if current_page < total_pages %} <a href="/search?words={{ words }}&page={{ current_page + 1 }}">Seguinte →</a>
+        {% endif %}
+    </div>
+  </main>
 </body>
+
 </html>
