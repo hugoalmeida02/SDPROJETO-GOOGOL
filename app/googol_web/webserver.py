@@ -65,7 +65,7 @@ class WebSever(index_pb2_grpc.IndexServicer):
         
         json_data = json.dumps(stats)
 
-        asyncio.run(broadcast_message(json_data))  
+        asyncio.run(broadcast_message(json_data))
         return empty_pb2.Empty()
 
 def run(host, port, host_gateway, port_gateway):

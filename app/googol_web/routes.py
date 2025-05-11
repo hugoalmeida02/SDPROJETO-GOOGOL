@@ -2,19 +2,17 @@ from fastapi import APIRouter, Request, Body, WebSocket, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from .webserver import WebSever
+
 from .websockets import add_client, remove_client
 from .utils.openai_api import generate_analysis
 from .utils.hackernews_api import index_user_stories, index_top_stories
 import asyncio
 from typing import Dict, Set
 import threading
+from .context import get_webserver
 
 router = APIRouter()
-
 templates = Jinja2Templates(directory="app/googol_web/templates")
-
-webserver = WebSever("localhost", "8888", "localhost", "8190")  # ajusta a porta
 
 # Store all connected clients
 connected_clients: Set[WebSocket] = set()
@@ -25,8 +23,8 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.post("/add-url")
-async def add_url(request: Request, payload: dict = Body(...)):
-    url = payload.get("url")
+async def add_url(request: Request, url: str):
+    webserver = get_webserver()
     if url:
         print(f"URL recebido para indexação: {url}")
         webserver.put_new_url(url)
@@ -37,6 +35,7 @@ async def add_url(request: Request, payload: dict = Body(...)):
 
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request, words: str, page: int = 1):
+    webserver = get_webserver()
     results = webserver.search_words(words)
     per_page = 10
 
@@ -75,7 +74,7 @@ async def generate_analysis_endpoint(request: Request):
     
 @router.get("/search-backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):
-    print(f"Consulta recebida: {url}")
+    webserver = get_webserver()
     backlinks = webserver.search_backlinks(url)
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
         

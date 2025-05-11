@@ -9,8 +9,12 @@ document
 
     if (type === "word") {
       window.location.href = `/search?words=${encoded}`;
-    } else {
+    }
+    if (type === "backlinks") {
       window.location.href = `/search-backlinks?url=${encoded}`;
+    }
+    if (type === "addurls") {
+      window.location.href = `/add-url?url=${encoded}`;
     }
   });
 

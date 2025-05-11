@@ -4,7 +4,7 @@ function connect() {
   socket = new WebSocket("ws://" + window.location.host + "/websocket");
 
   socket.onopen = () => {
-    console.log("Connected to plain WebSocketaaaaaa");
+    console.log("Connected to plain WebSocket");
     // Recupera as estatísticas do localStorage, se existirem
     const savedStats = localStorage.getItem("stats");
     if (savedStats) {
@@ -47,9 +47,8 @@ function updateStats(data) {
           .map(
             (b) => `<li>
                 ${b.ip} - 
-                Palavras indexadas: ${b.index_size_words} | 
-                URLs indexados: ${b.index_size_urls} |
-                Tempo médio de resposta: ${b.avg_response_time} s
+                Palavras indexadas: ${b.size_words} | 
+                URLs indexados: ${b.size_urls}
             </li>`
           )
           .join("")}</ul>

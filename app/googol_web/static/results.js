@@ -33,15 +33,36 @@
 //   });
 
 document.getElementById("generate-analysis-btn").addEventListener("click", async function() {
-      const searchTerms = "{{ words }}"; // Passar os termos de pesquisa já existentes para o backend
-      try {
-        const response = await axios.post("/generate_analysis", { search_terms: searchTerms });
-        const analysisText = response.data.analysis;
-        
-        // Mostrar a análise na página
-        document.getElementById("analysis-content").textContent = analysisText;
-        document.getElementById("analysis-container").style.display = "block";
-      } catch (error) {
-        console.error("Erro ao gerar a análise:", error);
-      }
-    });
+            const searchTerms = "{{ words }}"; // Passa os termos do Jinja2 para o JavaScript
+            
+            try {
+                // Adicionar a análise no início da página sem modificar o resto do conteúdo
+                const analysisContainer = document.getElementById("analysis-container");
+                const analysisContent = document.getElementById("analysis-content");
+
+                // Mostrar a análise na página
+                analysisContainer.style.display = "block";
+
+
+                const response = await fetch("/generate_analysis", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ search_terms: searchTerms })
+                });
+
+                // Verifica se a resposta foi bem-sucedida
+                if (!response.ok) {
+                    analysisContent.textContent = "Erro ao gerar a análise"
+                    throw new Error("Erro ao gerar a análise");
+                }
+
+                const data = await response.json();
+                const analysisText = data.analysis;
+                
+                analysisContent.textContent = analysisText;
+            } catch (error) {
+                console.error("Erro ao gerar a análise:", error);
+            }
+        });
