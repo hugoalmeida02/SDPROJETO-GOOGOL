@@ -240,7 +240,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         return empty_pb2.Empty()
     
 
-    def getStats(self):
+    def getStats(self, request, context):
         """ Retorna as estáticas """
         return self.stats()
     

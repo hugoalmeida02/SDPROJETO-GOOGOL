@@ -55,7 +55,7 @@ function updateStats(data) {
 
         <h3>Tempo médio de resposta (décimas de segundo)</h3>
         <ul>${Object.entries(data.avg_response_times)
-          .map(([ip, t]) => `<li>${ip}: ${t}</li>`)
+          .map(([ip, t]) => `<li>${ip}: ${t.toFixed(4)}</li>`)
           .join("")}</ul>
     `;
 

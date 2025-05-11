@@ -17,8 +17,7 @@
       {% if backlinks %}
         {% for item in backlinks %}
           <div class="result-item">
-            <h3><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h3>
-            <p>{{ item.snippet or item.url }}</p>
+            <h3><a href="{{ item }}" target="_blank">{{ item }}</a></h3>
           </div>
         {% endfor %}
       {% else %}
@@ -26,6 +25,5 @@
       {% endif %}
     </div>
   </main>
-  <script src="/static/backlinks.js"></script>
 </body>
 </html>

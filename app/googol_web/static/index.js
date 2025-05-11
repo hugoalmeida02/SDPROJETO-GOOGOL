@@ -6,15 +6,26 @@ document
     const type = document.getElementById("search-type").value;
 
     const encoded = encodeURIComponent(query);
-
+    console.log("Tipo selecionado:", type);
     if (type === "word") {
       window.location.href = `/search?words=${encoded}`;
-    }
-    if (type === "backlinks") {
+    } else if (type === "backlinks") {
       window.location.href = `/search-backlinks?url=${encoded}`;
-    }
-    if (type === "addurls") {
-      window.location.href = `/add-url?url=${encoded}`;
+    } else if (type === "addurls") {
+      fetch("/add-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `url=${encoded}`,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          alert(data.message || data.error);
+        })
+        .catch((err) => {
+          console.error("Erro ao adicionar URL:", err);
+        });
     }
   });
 

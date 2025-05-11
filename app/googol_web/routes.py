@@ -23,7 +23,7 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.post("/add-url")
-async def add_url(request: Request, url: str):
+async def add_url(request: Request, url: str = Form(...)):
     webserver = get_webserver()
     if url:
         print(f"URL recebido para indexação: {url}")
@@ -31,7 +31,6 @@ async def add_url(request: Request, url: str):
         return {"message": "URL adicionado com sucesso"}
     else:
         return {"error": "URL inválido"}
-    
 
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request, words: str, page: int = 1):
