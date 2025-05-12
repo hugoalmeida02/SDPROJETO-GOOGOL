@@ -8,15 +8,6 @@ def get_top_stories():
         return response.json()  # Retorna os IDs das top stories
     return []
 
-# Função para obter as stories de um utilizador (precisa do user_id)
-def get_user_stories(user_id):
-    url = f'https://hacker-news.firebaseio.com/v0/user/{user_id}.json?print=pretty'
-    response = requests.get(url)
-    if response.status_code == 200:
-        user_data = response.json()
-        return user_data.get('submitted', [])  # Retorna os IDs das stories
-    return []
-
 def get_story_details(story_id):
     url = f'https://hacker-news.firebaseio.com/v0/item/{story_id}.json?print=pretty'
     response = requests.get(url)
@@ -43,20 +34,7 @@ def index_top_stories(search_terms):
     story_ids = get_top_stories()
     stories = []
     
-    for story_id in story_ids[:50]:  # Limitar para as top 10
-        story_details = get_story_details(story_id)
-        if story_details:
-            stories.append(story_details)
-
-    filtered_stories = filter_stories_by_terms(stories, search_terms)
-    return index_story_urls(filtered_stories)
-
-def index_user_stories(user_id, search_terms):
-    # Obter as histórias do utilizador com base no ID fornecido
-    story_ids = get_user_stories(user_id)
-    stories = []
-    
-    for story_id in story_ids[:10]:  # Limitar para as top 10
+    for story_id in story_ids[:20]:  # Limitar para as top 20
         story_details = get_story_details(story_id)
         if story_details:
             stories.append(story_details)

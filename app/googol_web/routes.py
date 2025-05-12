@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 from .websockets import add_client, remove_client
 from .utils.openai_api import generate_analysis
-from .utils.hackernews_api import index_user_stories, index_top_stories
+from .utils.hackernews_api import index_top_stories
 import asyncio
 from typing import Dict, Set
 import threading
@@ -81,31 +81,13 @@ async def backlinks(request: Request, url: str):
 @router.post("/index_hackernews_urls")
 async def index_hackernews_urls(request: Request):
     search_terms = request.query_params.get('words', '').split()
-    
-    # Chama a função que já criaste para pegar as "top stories" e filtrar
     urls = index_top_stories(search_terms)
-
-    return templates.TemplateResponse("results.html", {
-        "request": request,
-        "words": search_terms,
-        "urls": urls,
-        "summary": "Análise gerada pela IA."
-    })
-
-
-@router.post("/index_hackernews_urls_user")
-async def index_hackernews_urls_user(request: Request, user_id: str = Form(...), ):
-    search_terms = request.query_params.get('words', '').split()
     
-    # Chama a função que já criaste para pegar as stories de um utilizador e filtrar
-    urls = index_user_stories(user_id, search_terms)
-    
-    return templates.TemplateResponse("results.html", {
-        "request": request,
-        "words": search_terms,
-        "urls": urls,
-        "summary": "Análise gerada pela IA."
-    })
+    webserver = get_webserver()
+    for url in urls:
+        webserver.put_new_url(url)
+        
+    return JSONResponse({"urls": urls, "count": len(urls)})
 
 
 @router.websocket("/websocket")
