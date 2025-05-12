@@ -5,6 +5,7 @@ body {
   padding: 0;
   background: #f4f6f8;
   color: #333;
+  overflow-x: hidden;
 }
 
 a {
@@ -25,11 +26,32 @@ header {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+header h1 a {
+  color: white;
+  text-decoration: none;
+}
+
+header h1 a:hover {
+  text-decoration: underline;
+}
+
 /* Conteúdo principal */
 main {
   padding: 2rem;
   max-width: 900px;
   margin: 0 auto;
+}
+
+.back-link {
+  margin-bottom: 1rem;
+  display: inline-block;
+  color: #1a73e8;
+  font-size: 0.95rem;
 }
 
 /* Caixa de pesquisa */
@@ -61,6 +83,10 @@ main {
   color: white;
   border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .search-box button:hover {
@@ -141,6 +167,7 @@ main {
   color: #000;
 }
 
+/* Secção para adicionar stories */
 #add-story {
   margin-top: 3rem;
 }
@@ -164,6 +191,10 @@ main {
   color: white;
   border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 #add-story-form button:hover {
@@ -175,20 +206,31 @@ main {
   color: #555;
 }
 
+/* Ferramentas */
 #tools {
   margin-bottom: 2rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 #tools button {
-  padding: 0.5rem 1rem;
+  flex: 1 1 45%;
+  padding: 0.75rem;
   background-color: #34a853;
   color: white;
   border: none;
   cursor: pointer;
   border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
 }
 
 #tools button:hover {
@@ -199,6 +241,8 @@ main {
   margin-top: 0.5rem;
   font-style: italic;
   color: #444;
+  width: 100%;
+  text-align: center;
 }
 
 .stats-section {
@@ -224,3 +268,67 @@ main {
   margin-bottom: 0.3rem;
 }
 
+/* Layout responsivo */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+
+  .search-box {
+    flex-direction: column;
+  }
+
+  .search-box input,
+  .search-box select,
+  .search-box button {
+    width: 100%;
+    flex: unset;
+  }
+
+  #tools {
+    flex-direction: column;
+  }
+
+  #tools button {
+    width: 100%;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: 20% auto;
+  }
+
+  .result-item h3 {
+    font-size: 1rem;
+  }
+
+  .pagination a,
+  .pagination span {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* Cartão de ferramentas */
+.tool-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.tool-card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+}
