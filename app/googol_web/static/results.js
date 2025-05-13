@@ -18,16 +18,18 @@ document
 
       const data = await res.json();
       msg.textContent = `Foram indexadas ${data.count} URLs das top stories.`;
+      console.log(data.count);
+      if (data.count > 0) {
+        // Mostrar os resultados
+        list.innerHTML = "";
+        data.urls.forEach((url) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+          list.appendChild(li);
+        });
 
-      // Mostrar os resultados
-      list.innerHTML = "";
-      data.urls.forEach((url) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
-        list.appendChild(li);
-      });
-
-      container.style.display = "block";
+        container.style.display = "block";
+      }
     } catch (err) {
       console.error(err);
       msg.textContent = "Erro ao indexar as top stories.";
@@ -37,8 +39,9 @@ document
 document
   .getElementById("generate-analysis-btn")
   .addEventListener("click", async function () {
-    const searchTerms = "{{ words }}"; // Passa os termos do Jinja2 para o JavaScript
-
+    const query = new URLSearchParams(window.location.search);
+    const searchWords = query.get("words") || "";
+    
     try {
       // Adicionar a análise no início da página sem modificar o resto do conteúdo
       const analysisContainer = document.getElementById("analysis-container");
@@ -52,7 +55,7 @@ document
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ search_terms: searchTerms }),
+        body: JSON.stringify({ search_terms: searchWords }),
       });
 
       // Verifica se a resposta foi bem-sucedida

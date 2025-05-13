@@ -7,16 +7,16 @@ from .routes import router
 from .webserver import WebSever
 from ..index_pb2 import index_pb2, index_pb2_grpc
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 import argparse
 import os
 from .context import set_webserver
+from fastapi.responses import FileResponse
 
 app = FastAPI()
-app.include_router(router)
 
-static_path = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+app.mount("/static", StaticFiles(directory="app/googol_web/static"), name="static")
+
+app.include_router(router)
 
 # Inicializa o WebSever antes de iniciar o servidor HTTP
 def initialize_webserver(args):

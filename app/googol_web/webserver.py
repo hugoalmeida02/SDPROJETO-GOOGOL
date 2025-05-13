@@ -62,7 +62,7 @@ class WebSever(index_pb2_grpc.IndexServicer):
             for barrel in request.barrels
         }
         }
-        print(stats)
+        
         json_data = json.dumps(stats)
 
         asyncio.run(broadcast_message(json_data))

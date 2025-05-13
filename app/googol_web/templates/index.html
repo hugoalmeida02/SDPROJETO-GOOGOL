@@ -5,11 +5,19 @@
   <meta charset="UTF-8" />
   <title>Googol</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 
-<body>
-  <header>
-    <h1><a href="/" style="color: white;">Googol</a></h1>
+<body onresize="mudouTamanho()">
+  <header id="main">
+    <h1><a href="/">Googol</a></h1>
+    <i id="burger" class="material-icons">menu</i>
+    <menu id="itens">
+      <button id="open-stats-btn">Estatísticas</button>
+      <button id="open-sobre-btn">Sobre</button>
+      <button id="open-ajuda-btn">Ajuda</button>
+      <button id="open-contacto-btn">Contactos</button>
+    </menu>
   </header>
 
   <main>
@@ -23,8 +31,6 @@
       <button type="submit">Pesquisar</button>
     </form>
 
-    <button id="open-stats-btn">Ver estatísticas</button>
-
     <div id="stats-modal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="close-stats-btn">&times;</span>
@@ -33,124 +39,68 @@
       </div>
     </div>
 
+    <div id="sobre-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="close-sobre-btn">&times;</span>
+        <h2>Sobre</h2>
+        <p>O projeto <strong>Googol</strong> é um motor de pesquisa de páginas Web, desenvolvido no âmbito da disciplina
+          de Sistemas Distribuídos do curso de Engenharia Informática da Universidade de Coimbra. O sistema tem como
+          objetivo proporcionar funcionalidades semelhantes às de motores de busca conhecidos, como Google, Qwant e
+          Ecosia. Inclui a indexação automática de páginas via Web crawler, a pesquisa de conteúdos com base em
+          palavras-chave e a exibição de resultados ordenados por relevância. O sistema também permite aos utilizadores
+          sugerirem URLs para serem indexados. A aplicação foi projetada para operar de forma eficiente e escalável, com
+          uma interface Web que permite a consulta de páginas, análise de backlinks e visualização de estatísticas em
+          tempo real, utilizando tecnologias como FastAPI e WebSockets.</p>
+      </div>
+    </div>
+
+    <div id="ajuda-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="close-ajuda-btn">&times;</span>
+        <h2>Ajuda</h2>
+        <p>Este sistema oferece várias funcionalidades interativas para melhorar a experiência do utilizador:</p>
+        <ul>
+          <li><strong>Seleção de Ação</strong>: Na página principal, pode escolher o tipo de pesquisa que deseja
+            realizar através de um <strong>select box</strong>. As opções disponíveis são:
+            <ul>
+              <li><strong>Pesquisa por palavra</strong>: Para buscar páginas que contenham palavras específicas.</li>
+              <li><strong>Pesquisa de backlinks</strong>: Para consultar páginas que fazem link para uma URL específica.
+              </li>
+              <li><strong>Adicionar URL</strong>: Para sugerir um novo URL a ser indexado pelo sistema.</li>
+            </ul>
+          </li>
+          <li><strong>Menu e Estatísticas</strong>: O menu superior permite navegar entre várias abas, incluindo uma
+            secção de <strong>estatísticas em tempo real</strong>, que apresenta dados atualizados automaticamente, como
+            as 10 pesquisas mais comuns, os "Barrels" ativos e o tempo médio de resposta às pesquisas.</li>
+          <li><strong>Funções de Pesquisa</strong>:
+            <ul>
+              <li><strong>Página de Resultados</strong>: Ao realizar uma pesquisa, os resultados serão apresentados por
+                paginação de 10 em 10. Além disso, duas funcionalidades adicionais estão disponíveis:
+                <ul>
+                  <li><strong>Indexação das "Top Stories" do Hacker News</strong>: O sistema permite indexar URLs das
+                    top stories do Hacker News que contêm os termos pesquisados.</li>
+                  <li><strong>Análise de Termos pela OpenAI</strong>: Após a pesquisa, a OpenAI pode ser utilizada para
+                    gerar uma análise contextual dos termos pesquisados ou das citações curtas dos resultados.</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="contacto-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" id="close-contacto-btn">&times;</span>
+        <h2>Contacto</h2>
+        <p>Desenvolvido por <strong>Hugo Almeida</strong> no âmbito da disciplina de <strong>Sistemas
+            Distribuídos</strong> do curso de Engenharia Informática da Universidade de Coimbra. O código fonte do
+          projeto está disponível no meu <a href="https://github.com/hugoalmeida02" target="_blank">GitHub</a>.</p>
+      </div>
+    </div>
   </main>
-  <script>document
-  .getElementById("search-form")
-  .addEventListener("submit", function (event) {
-    event.preventDefault(); // evita recarregamento
-    const query = document.getElementById("search-input").value.trim();
-    const type = document.getElementById("search-type").value;
-
-    const encoded = encodeURIComponent(query);
-    console.log("Tipo selecionado:", type);
-    if (type === "word") {
-      window.location.href = `/search?words=${encoded}`;
-    } else if (type === "backlinks") {
-      window.location.href = `/search-backlinks?url=${encoded}`;
-    } else if (type === "addurls") {
-      fetch("/add-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: `url=${encoded}`,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          alert(data.message || data.error);
-        })
-        .catch((err) => {
-          console.error("Erro ao adicionar URL:", err);
-        });
-    }
-  });
-
-// Abrir e fechar modal
-document.getElementById("open-stats-btn").addEventListener("click", () => {
-  document.getElementById("stats-modal").style.display = "block";
-});
-
-document.getElementById("close-stats-btn").addEventListener("click", () => {
-  document.getElementById("stats-modal").style.display = "none";
-});
-
-// Fechar ao clicar fora do conteúdo do modal
-window.addEventListener("click", function (event) {
-  const modal = document.getElementById("stats-modal");
-  if (event.target === modal) {
-    modal.style.display = "none";
-  }  
-});
-let socket = null;
-
-function connect() {
-  socket = new WebSocket("ws://" + window.location.host + "/websocket");
-
-  socket.onopen = () => {
-    console.log("Connected to plain WebSocket");
-    // Recupera as estatísticas do localStorage, se existirem
-    const savedStats = localStorage.getItem("stats");
-    if (savedStats) {
-      updateStats(JSON.parse(savedStats));
-    }
-  };
-
-  socket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "stats") {
-        updateStats(data);
-      } else {
-        console.log("Mensagem desconhecida:", data);
-      }
-    } catch (e) {
-      console.error("Erro ao processar mensagem:", e);
-    }
-  };
-
-  socket.onerror = (event) => {
-    console.error("WebSocket error", event);
-  };
-
-  socket.onclose = () => {
-    console.log("Disconnected from WebSocket");
-  };
-}
-
-function updateStats(data) {
-  const statsDiv = document.getElementById("stats");
-
-  statsDiv.innerHTML = `
-        <h3>Top 10 pesquisas</h3>
-        <ul>${data.top_queries.map((q) => `<li>${q}</li>`).join("")}</ul>
-
-        <h3>Barrels ativos</h3>
-        <ul>${data.barrels
-          .map(
-            (b) => `<li>
-                ${b.ip} - 
-                Palavras indexadas: ${b.size_words} | 
-                URLs indexados: ${b.size_urls}
-            </li>`
-          )
-          .join("")}</ul>
-
-        <h3>Tempo médio de resposta (décimas de segundo)</h3>
-        <ul>${Object.entries(data.avg_response_times)
-          .map(([ip, t]) => `<li>${ip}: ${t.toFixed(4)}</li>`)
-          .join("")}</ul>
-    `;
-
-  // Salvar as estatísticas no localStorage
-  localStorage.setItem("stats", JSON.stringify(data));
-}
-
-window.addEventListener("load", () => {
-  connect(); // Estabelece ligação ao WebSocket para stats
-});
-</script>
-  <script src="/static/websocket.js" defer></script>
+  <script src="/static/index.js"></script>
+  <script src="/static/websocket.js"></script>
 </body>
 
 </html>

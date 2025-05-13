@@ -43,7 +43,7 @@ async def search(request: Request, words: str, page: int = 1):
     end = start + per_page
     paginated = results[start:end]
     total_pages = (len(results) + per_page - 1) // per_page
-
+    
     return templates.TemplateResponse("results.html", {
         "request": request,
         "words": words,
@@ -62,9 +62,7 @@ async def generate_analysis_endpoint(request: Request):
         if not search_terms:
             return JSONResponse(status_code=400, content={"error": "search_terms são obrigatórios"})
         
-        # Simulação de análise (substitua com lógica real)
-        analysis = f"Analisando os seguintes termos: {search_terms}"
-        # analysis = await generate_analysis(search_terms)
+        analysis = await generate_analysis(search_terms)
 
         return JSONResponse(content={"analysis": analysis})
     
@@ -75,6 +73,7 @@ async def generate_analysis_endpoint(request: Request):
 async def backlinks(request: Request, url: str):
     webserver = get_webserver()
     backlinks = webserver.search_backlinks(url)
+    print(backlinks)
     return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
         
 
