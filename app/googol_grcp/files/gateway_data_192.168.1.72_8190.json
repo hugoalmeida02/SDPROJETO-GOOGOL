@@ -31,7 +31,11 @@
       "urls": 11
     }
   },
-  "index_barrels": {},
-  "send_statistics": true,
-  "web_sever": "192.168.1.72:8888"
+  "index_barrels": {
+    "192.168.1.72:8124": {
+      "failures": 0
+    }
+  },
+  "send_statistics": false,
+  "web_sever": ""
 }
