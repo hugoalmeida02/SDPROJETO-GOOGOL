@@ -1,6 +1,6 @@
 {
   "search_counter": {
-    "sapo": 33,
+    "sapo": 34,
     "piratass": 1,
     "underrated": 15,
     "tech": 1,
@@ -83,6 +83,10 @@
       0.01617908477783203,
       0.019583702087402344,
       0.01970052719116211
+    ],
+    "localhost:8124": [
+      0.018105506896972656,
+      0.01644134521484375
     ]
   },
   "index_sizes": {
@@ -95,5 +99,9 @@
       "urls": 11
     }
   },
-  "index_barrels": {}
+  "index_barrels": {
+    "localhost:8124": {
+      "failures": 0
+    }
+  }
 }

@@ -14,17 +14,19 @@
   </header>
 
   <main>
+    <!-- Lista de backlinks encontrados -->
     <div id="results-container">
       {% if backlinks %}
-        {% for item in backlinks %}
-          <div class="result-item">
-            <h3><a href="{{ item }}" target="_blank">{{ item }}</a></h3>
-          </div>
-        {% endfor %}
+      {% for item in backlinks %}
+      <div class="result-item">
+        <h3><a href="{{ item }}" target="_blank">{{ item }}</a></h3>
+      </div>
+      {% endfor %}
       {% else %}
-        <p style="word-break: break-word;">Nenhum backlink encontrado para {{ url }}.</p>
+      <p style="word-break: break-word;">Nenhum backlink encontrado para {{ url }}.</p>
       {% endif %}
     </div>
   </main>
 </body>
+
 </html>

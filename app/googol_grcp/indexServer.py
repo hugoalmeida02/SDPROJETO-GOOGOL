@@ -1,6 +1,5 @@
 from concurrent import futures
 import grpc
-from ..index_pb2 import index_pb2, index_pb2_grpc
 from google.protobuf import empty_pb2
 import threading
 import argparse
@@ -8,6 +7,8 @@ import queue
 import os
 import json
 import time
+
+from ..index_pb2 import index_pb2, index_pb2_grpc
 
 SAVE_INTERVAL = 5  # Intervalo para auto save à data
 CHECK_REPLICAS_INTERVAL = 5  # Intervalo para verificar replicas ativas
@@ -198,6 +199,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
                     (param0, param1, param2, param3, tipo, replica))
 
     def send_index_size_to_gateway(self):
+        """ Envia o tamanho dos indices para a gateway"""
         len_words = len(self.words_data)
         len_urls = len(self.urls_data)
         try:
@@ -339,9 +341,9 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=str, required=True,
                         help="Porta para o servidor gRPC")
     parser.add_argument("--host_gateway", type=str, required=True,
-                        help="Host para o servidor gRPC")
+                        help="Host para a gateway")
     parser.add_argument("--port_gateway", type=str, required=True,
-                        help="Porta para o servidor gRPC")
+                        help="Porta para a gateway")
     args = parser.parse_args()
 
     run(args.host, args.port, args.host_gateway, args.port_gateway)

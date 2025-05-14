@@ -1,9 +1,9 @@
 import grpc
-from ..index_pb2 import index_pb2, index_pb2_grpc
 from google.protobuf import empty_pb2
 import time
 import argparse
 
+from ..index_pb2 import index_pb2, index_pb2_grpc
 
 def run(host_gateway, port_gateway):
     channel = grpc.insecure_channel(f"{host_gateway}:{port_gateway}")

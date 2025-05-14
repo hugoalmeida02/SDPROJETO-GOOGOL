@@ -21,6 +21,7 @@
   </header>
 
   <main>
+    <!-- Formulário principal de pesquisa -->
     <form id="search-form" class="search-box">
       <input type="text" id="search-input" placeholder="Insere a palavra ou URL..." required />
       <select id="search-type">
@@ -31,6 +32,7 @@
       <button type="submit">Pesquisar</button>
     </form>
 
+    <!-- Modal de estatísticas com dados em tempo real -->
     <div id="stats-modal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="close-stats-btn">&times;</span>
@@ -39,6 +41,7 @@
       </div>
     </div>
 
+    <!-- Modal com informações sobre o projeto -->
     <div id="sobre-modal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="close-sobre-btn">&times;</span>
@@ -54,6 +57,7 @@
       </div>
     </div>
 
+    <!-- Modal com ajuda para utilização da interface -->
     <div id="ajuda-modal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="close-ajuda-btn">&times;</span>
@@ -89,6 +93,7 @@
       </div>
     </div>
 
+    <!-- Modal com informação de contacto do autor -->
     <div id="contacto-modal" class="modal">
       <div class="modal-content">
         <span class="close-btn" id="close-contacto-btn">&times;</span>
@@ -99,6 +104,7 @@
       </div>
     </div>
   </main>
+  <!-- Inclusão dos scripts JavaScript -->
   <script src="/static/index.js"></script>
   <script src="/static/websocket.js"></script>
 </body>

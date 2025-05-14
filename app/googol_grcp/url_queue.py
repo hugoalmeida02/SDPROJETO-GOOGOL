@@ -1,4 +1,3 @@
-from ..index_pb2 import index_pb2, index_pb2_grpc
 import grpc
 from google.protobuf import empty_pb2
 from concurrent import futures
@@ -8,8 +7,9 @@ import os
 import threading
 import time
 
-SAVE_INTERVAL = 5  # Intervalo para auto save à data
+from ..index_pb2 import index_pb2, index_pb2_grpc
 
+SAVE_INTERVAL = 5  # Intervalo para auto save à data
 
 class QueueService(index_pb2_grpc.IndexServicer):
     def __init__(self, host, port):
@@ -85,9 +85,9 @@ def run(host, port):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Url Queue")
     parser.add_argument("--host_url_queue", type=str, required=True,
-                        help="Host para o servidor gRPC")
+                        help="Host para a url_queue")
     parser.add_argument("--port_url_queue", type=str, required=True,
-                        help="Porta para o servidor gRPC")
+                        help="Porta para a url_queue")
 
     args = parser.parse_args()
 

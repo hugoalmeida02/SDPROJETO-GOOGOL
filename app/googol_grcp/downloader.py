@@ -1,6 +1,5 @@
 import grpc
 from google.protobuf import empty_pb2
-from ..index_pb2 import index_pb2, index_pb2_grpc
 import requests
 from bs4 import BeautifulSoup as jsoup
 import re
@@ -8,6 +7,7 @@ import time
 import random
 import argparse
 
+from ..index_pb2 import index_pb2, index_pb2_grpc
 
 def extract_info(html, base_url):
     """ Extrai a informação de uma página """

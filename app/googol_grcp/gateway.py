@@ -2,13 +2,13 @@ import argparse
 import grpc
 from google.protobuf import empty_pb2
 from concurrent import futures
-from ..index_pb2 import index_pb2, index_pb2_grpc
 import random
 import time
 import threading
 import json
 import os
 
+from ..index_pb2 import index_pb2, index_pb2_grpc
 
 MAX_INDEX_BARRELS = 3 #Número máximo de barrels
 CHECK_INTERVAL = 5  # Intervalo para verificar replicas ativas
@@ -81,16 +81,10 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             return index_pb2.ValidRegister(valid=True)
 
     def startSendingStatistics(self, request, context):
+        """ Configura ligação ao webserver e começa a enviar estatisticas em tempo real  """
         self.web_sever = f"{request.host}:{request.port}"
         self.send_statistics = True
-        channel = grpc.insecure_channel(self.web_sever)
-        try:
-            stub = index_pb2_grpc.IndexStub(channel)
-            stub.SendStats(self.stats())
-        except grpc.RpcError as e:
-            print(f"RPC failed: {e.code()}")
-            print(f"RPC error details: {e.details()}")
-        return empty_pb2.Empty()
+        return self.stats()
     
     def getIndexBarrels(self, request, context):
         """ Informa acerca dos Index Barrels ativos """
@@ -178,7 +172,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 continue
             
         if self.send_statistics == True:
-            # responde = self.getStats()
             channel = grpc.insecure_channel(self.web_sever)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)
@@ -216,7 +209,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 continue
         
         if self.send_statistics == True:
-            # responde = self.getStats()
             channel = grpc.insecure_channel(self.web_sever)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)
@@ -245,6 +237,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         return self.stats()
     
     def stats(self):
+        """ Formata as estatiticas de modo a enviar para o webserver ou para o client """
         response = index_pb2.SystemStats()
         # Top 10 pesquisas
         sorted_queries = sorted(self.search_counter.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -282,13 +275,13 @@ def run(host, port, host_url_queue, port_url_queue):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gateway")
     parser.add_argument("--host_gateway", type=str, required=True,
-                        help="Host para o servidor gRPC")
+                        help="Host para a Gateway")
     parser.add_argument("--port_gateway", type=str, required=True,
-                        help="Porta para o servidor gRPC")
+                        help="Porta para a Gateway")
     parser.add_argument("--host_url_queue", type=str, required=True,
-                        help="Host para o servidor gRPC")
+                        help="Host para a url_queue")
     parser.add_argument("--port_url_queue", type=str, required=True,
-                        help="Porta para o servidor gRPC")
+                        help="Porta para a url_queue")
     args = parser.parse_args()
     
     run(args.host_gateway, args.port_gateway, args.host_url_queue, args.port_url_queue)

@@ -14,20 +14,27 @@
   </header>
 
   <main>
+    <!-- Secção com ferramentas extra -->
     <section id="tools" class="tool-card">
       <h2>Ferramentas</h2>
       <button id="index-top-stories-btn">Indexar Top Stories do Hacker News</button>
       <button id="generate-analysis-btn">Gerar Análise da Pesquisa</button>
       <p id="tool-msg"></p>
     </section>
+
+    <!-- Contém a análise textual gerada -->
     <div id="analysis-container" style="display: none;" class="result-item">
       <h2>Análise Gerada:</h2>
       <p id="analysis-content">A gerar a tua resposta...</p>
     </div>
+
+    <!-- Mostra URLs indexados do Hacker News -->
     <div id="indexed-urls-container" style="display: none;" class="result-item">
       <h2>URLs das Top Stories Indexadas:</h2>
       <ul id="indexed-url-list"></ul>
     </div>
+
+    <!-- Resultados da pesquisa -->
     <div id="results-container">
       {% if urls %}
       {% for item in urls %}
@@ -41,6 +48,7 @@
       {% endif %}
     </div>
 
+     <!-- Paginação -->
     <div class="pagination">
       {% if current_page > 1 %}
       <a href="/search?words={{ words }}&page={{ current_page - 1 }}">← Anterior</a>
@@ -50,6 +58,8 @@
         {% endif %}
     </div>
   </main>
+
+  <!-- Script responsável por interações com os botões da página -->
   <script src="/static/results.js"></script>
 </body>
 

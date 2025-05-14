@@ -23,7 +23,7 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 20px 100px;
-  background-color: #1a73e8; /* Cor do cabeçalho */
+  background-color: #1a73e8;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -60,7 +60,7 @@ menu {
 menu > button {
   background-color: #3785fa;
   color: white;
-  border: 2px solid white; /* Borda branca */
+  border: 2px solid white; 
   padding: 10px 20px;
   margin: 5px;
   font-size: 16px;
@@ -69,7 +69,6 @@ menu > button {
   transition: background-color 0.3s, transform 0.3s;
 }
 
-/* Estilo para os botões no estado normal */
 menu > button:hover {
   background-color: #0f5cc2;
   transform: scale(1.05);
@@ -88,7 +87,6 @@ main {
   color: #1a73e8;
   font-size: 0.95rem;
 }
-
 
 .search-box {
   display: flex;
@@ -285,6 +283,22 @@ main {
   text-align: center;
 }
 
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.tool-card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+}
 .stats-section {
   margin-top: 1rem;
   font-family: Arial, sans-serif;
@@ -413,21 +427,4 @@ main {
     font-size: 20px; 
   }
 
-}
-
-.tool-card {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  background: #fff;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.tool-card h2 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
-  color: #333;
 }
