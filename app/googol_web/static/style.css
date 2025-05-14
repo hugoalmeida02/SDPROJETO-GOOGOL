@@ -343,10 +343,11 @@ main {
     color: white;
     display: block;
     text-align: center;
-    padding: 10px;
+    padding: 10px 0px;
     cursor: pointer;
     border: 1px solid white;
     transition: background-color 0.3s, transform 0.3s;
+    box-sizing: border-box
   }
 
   i#burger:hover {
@@ -354,6 +355,7 @@ main {
   }
 
   menu {
+    width: 100vw;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;

@@ -26,8 +26,10 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         self.index_sizes = {} #Data para estatitiscas
         self.load_data()
         self.lock = threading.Lock()
-        self.send_statistics = True
+        self.send_statistics = False
         self.web_server = ""
+        self.web_server_stub = None
+        self.web_server_channel = None
         
         threading.Thread(target=self.auto_save, daemon=True).start() # Thread para guarda a data periodicamente
         threading.Thread(target=self.check_index_servers, daemon=True).start() # Thread para manter a informacao sobre os barrels ativos
@@ -88,6 +90,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
     def startSendingStatistics(self, request, context):
         """ Configura ligação ao webserver e começa a enviar estatisticas em tempo real  """
         self.web_server = f"{request.host}:{request.port}"
+        self.web_server_channel = grpc.insecure_channel(self.web_server)
+        self.web_server_stub = index_pb2_grpc.IndexStub(self.web_server_channel)
         self.send_statistics = True
         return self.stats()
     
@@ -105,7 +109,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         try:
             with grpc.insecure_channel(address) as channel:
                 stub = index_pb2_grpc.IndexStub(channel)
-                stub.searchWord(index_pb2.SearchWordRequest(words="ping"))
+                stub.Ping(empty_pb2.Empty())
             return True
         except grpc.RpcError:
             return False
@@ -138,13 +142,13 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             }
         
         if self.send_statistics and self.web_server:
-            channel = grpc.insecure_channel(self.web_server)
             try:
-                stub = index_pb2_grpc.IndexStub(channel)
-                stub.SendStats(self.stats())
+                self.web_server_stub.SendStats(self.stats())
             except grpc.RpcError as e:
-                print(f"RPC failed: {e.code()}")
-                print(f"RPC error details: {e.details()}")
+                print(f"[Gateway] Falha ao enviar estatísticas: {e.code()}")
+                self.web_server_channel = grpc.insecure_channel(self.web_server)
+                self.web_server_stub = index_pb2_grpc.IndexStub(self.web_server_channel)
+                time.sleep(1)
         
         return empty_pb2.Empty()
                
@@ -152,7 +156,6 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         """Pesquisa a palavra em todos os servidores e agrega os resultados"""
         termos = request.words.strip().lower()
         self.search_counter[termos] = self.search_counter.get(termos, 0) + 1
-          
         active_servers = [barrel for barrel in self.index_barrels.keys()]
         random.shuffle(active_servers)
         results = []
@@ -175,15 +178,14 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
             except grpc.RpcError as e:
                 print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
-            
         if self.send_statistics and self.web_server:
-            channel = grpc.insecure_channel(self.web_server)
             try:
-                stub = index_pb2_grpc.IndexStub(channel)
-                stub.SendStats(self.stats())
+                self.web_server_stub.SendStats(self.stats())
             except grpc.RpcError as e:
-                print(f"RPC failed: {e.code()}")
-                print(f"RPC error details: {e.details()}")
+                print(f"[Gateway] Falha ao enviar estatísticas: {e.code()}")
+                self.web_server_channel = grpc.insecure_channel(self.web_server)
+                self.web_server_stub = index_pb2_grpc.IndexStub(self.web_server_channel)
+                time.sleep(1)
             
         return index_pb2.SearchWordResponse(urls=results)
 
@@ -214,14 +216,14 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 continue
         
         if self.send_statistics and self.web_server:
-            channel = grpc.insecure_channel(self.web_server)
             try:
-                stub = index_pb2_grpc.IndexStub(channel)
-                stub.SendStats(self.stats())
+                self.web_server_stub.SendStats(self.stats())
             except grpc.RpcError as e:
-                print(f"RPC failed: {e.code()}")
-                print(f"RPC error details: {e.details()}")
-        
+                print(f"[Gateway] Falha ao enviar estatísticas: {e.code()}")
+                self.web_server_channel = grpc.insecure_channel(self.web_server)
+                self.web_server_stub = index_pb2_grpc.IndexStub(self.web_server_channel)
+                time.sleep(1)
+                
         return index_pb2.SearchBacklinksResponse(backlinks=results)
 
     def putNew(self, request, context):

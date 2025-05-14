@@ -94,6 +94,9 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
             time.sleep(SAVE_INTERVAL)
             self.save_data()
 
+    def Ping(self, request, context):
+        return empty_pb2.Empty()
+    
     def sync_with_existing_replicas(self):
         """Sincroniza com outros Index Barrels quando inicia."""
         response = self.gateway_stub.getIndexBarrels(empty_pb2.Empty())
@@ -249,7 +252,7 @@ class IndexServicer(index_pb2_grpc.IndexServicer):
     def searchWord(self, request, context):
         """ Procura os urls correspondentes a uma conjunto de palavras ou a uma unica palavra """
         with self.lock:
-            palavras = request.words.split()
+            palavras = request.words.lower().split()
 
             if not palavras:
                 return index_pb2.SearchWordResponse(urls=[index_pb2.WordInfo()])

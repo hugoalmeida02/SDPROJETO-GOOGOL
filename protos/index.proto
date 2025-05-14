@@ -18,6 +18,7 @@ service Index {
     rpc updateIndexSize(IndexSizeUpdateRequest) returns (google.protobuf.Empty);
     rpc SendStats (SystemStats) returns (google.protobuf.Empty);
     rpc startSendingStatistics (WebServerInfo) returns (SystemStats);
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message PutNewRequest {

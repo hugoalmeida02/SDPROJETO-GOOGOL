@@ -46,6 +46,7 @@ async def add_url(request: Request, url: str = Form(...)):
 # Pesquisa por palavras com paginação
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request, words: str, page: int = 1):
+    print(words)
     webserver = get_webserver()
     response = webserver.search_words(words)
     
