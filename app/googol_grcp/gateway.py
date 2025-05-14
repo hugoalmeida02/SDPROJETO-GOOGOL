@@ -40,6 +40,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 self.response_times = data.get("response_times", {})
                 self.index_sizes = data.get("index_sizes", {})
                 self.index_barrels = data.get("index_barrels", {})
+                self.send_statistics = data.get("send_statistics")
+                self.web_server = data.get("web_server")
             print(f"Dados carregados do ficheiro {self.gateway_file}")
         else:
             with open(self.gateway_file, "w") as f:
@@ -58,7 +60,9 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 "search_counter": self.search_counter,
                 "response_times": self.response_times,
                 "index_sizes": self.index_sizes,
-                "index_barrels" : self.index_barrels
+                "index_barrels" : self.index_barrels,
+                "send_statistics" : self.send_statistics,
+                "web_sever": self.web_server
             }
             with open(self.gateway_file, "w") as f:
                 json.dump(data, f, indent=2)
@@ -82,7 +86,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
 
     def startSendingStatistics(self, request, context):
         """ Configura ligação ao webserver e começa a enviar estatisticas em tempo real  """
-        self.web_sever = f"{request.host}:{request.port}"
+        self.web_server = f"{request.host}:{request.port}"
         self.send_statistics = True
         return self.stats()
     
@@ -132,8 +136,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 "urls": request.lenIndexUrls
             }
         
-        if self.send_statistics == True:
-            channel = grpc.insecure_channel(self.web_sever)
+        if self.send_statistics and self.web_server:
+            channel = grpc.insecure_channel(self.web_server)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)
                 stub.SendStats(self.stats())
@@ -171,8 +175,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
             
-        if self.send_statistics == True:
-            channel = grpc.insecure_channel(self.web_sever)
+        if self.send_statistics and self.web_server:
+            channel = grpc.insecure_channel(self.web_server)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)
                 stub.SendStats(self.stats())
@@ -208,8 +212,8 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
                 print(f"Falha ao contactar {server}, tentando próximo...")
                 continue
         
-        if self.send_statistics == True:
-            channel = grpc.insecure_channel(self.web_sever)
+        if self.send_statistics and self.web_server:
+            channel = grpc.insecure_channel(self.web_server)
             try:
                 stub = index_pb2_grpc.IndexStub(channel)
                 stub.SendStats(self.stats())

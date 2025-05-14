@@ -8,7 +8,7 @@ import argparse
 
 from .context import set_webserver
 from .routes import router
-from .webserver import WebSever
+from .webserver import WebServer
 from ..index_pb2 import index_pb2_grpc
 
 app = FastAPI()
@@ -21,7 +21,7 @@ app.include_router(router)
 
 # Inicializa o WebSever antes de iniciar o servidor HTTP
 def initialize_webserver(args):
-    webserver = WebSever(args.host_webserver, args.port_webserver, args.host_gateway, args.port_gateway)
+    webserver = WebServer(args.host_webserver, args.port_webserver, args.host_gateway, args.port_gateway)
     set_webserver(webserver)  # Definir o webserver para uso global
     return webserver
 

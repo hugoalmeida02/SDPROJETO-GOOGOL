@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from typing import Set
 import threading
 import asyncio
+import grpc
 
 from .websockets import add_client, remove_client
 from .utils.openai_api import generate_analysis
@@ -32,8 +33,12 @@ async def add_url(request: Request, url: str = Form(...)):
     webserver = get_webserver()
     if url:
         print(f"URL recebido para indexação: {url}")
-        webserver.put_new_url(url)
-        return {"message": "URL adicionado com sucesso"}
+        response = webserver.put_new_url(url)
+        
+        if response:
+            return {"message": "URL adicionado com sucesso"}
+        else:
+            return {"message": "Falha ao adicionar ur! Tente novamente"}
     else:
         return {"error": "URL inválido"}
 
@@ -42,22 +47,29 @@ async def add_url(request: Request, url: str = Form(...)):
 @router.get("/search", response_class=HTMLResponse)
 async def search(request: Request, words: str, page: int = 1):
     webserver = get_webserver()
-    results = webserver.search_words(words)
-    per_page = 10
+    response = webserver.search_words(words)
+    
+    if response[0]:
+        results = response[1]
+        per_page = 10
 
-    # Paginação
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated = results[start:end]
-    total_pages = (len(results) + per_page - 1) // per_page
+        # Paginação
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated = results[start:end]
+        total_pages = (len(results) + per_page - 1) // per_page
 
-    return templates.TemplateResponse("results.html", {
-        "request": request,
-        "words": words,
-        "urls": paginated,
-        "current_page": page,
-        "total_pages": total_pages
-    })
+        return templates.TemplateResponse("results.html", {
+            "request": request,
+            "words": words,
+            "urls": paginated,
+            "current_page": page,
+            "total_pages": total_pages
+        })
+    else:
+        return templates.TemplateResponse("falha.html", {"request": request})
+        
+            
 
 
 # Indexação de URLs do Hacker News com base em termos pesquisados
@@ -92,9 +104,13 @@ async def generate_analysis_endpoint(request: Request):
 @router.get("/search-backlinks", response_class=HTMLResponse)
 async def backlinks(request: Request, url: str):
     webserver = get_webserver()
-    backlinks = webserver.search_backlinks(url)
-    print(backlinks)
-    return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
+    response = webserver.search_backlinks(url)
+    if response[0]:
+        backlinks = response[1]
+        return templates.TemplateResponse("backlinks.html", {"request": request, "url": url, "backlinks": backlinks})
+    else:
+        return templates.TemplateResponse("falha.html", {"request": request})
+    
 
 
 # Endpoint WebSocket para enviar estatísticas em tempo real

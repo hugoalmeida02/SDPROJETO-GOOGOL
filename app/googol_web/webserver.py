@@ -9,39 +9,57 @@ from .websockets import broadcast_message
 from ..index_pb2 import index_pb2, index_pb2_grpc
 
 # WebServer gRPC para comunicação com a Gateway
-class WebSever(index_pb2_grpc.IndexServicer):
+class WebServer(index_pb2_grpc.IndexServicer):
     def __init__(self, host, port, host_gateway, port_gateway):
         self.host = host
         self.port = port
         self.gateway = f"{host_gateway}:{port_gateway}"
-        self.gateway_stub = self.get_gateway_stub()
         self.start_sending_statistics()
 
     def get_gateway_stub(self):
-        while True:
-            try:
-                channel = grpc.insecure_channel(self.gateway)
-                stub = index_pb2_grpc.IndexStub(channel)
-                return stub
-            except:
-                time.sleep(2)
-                print("Tentado conectar à gatewaay")
-
+        try:
+            print("Conectantdo á gateway")
+            channel = grpc.insecure_channel(self.gateway)
+            self.gateway_stub = index_pb2_grpc.IndexStub(channel)
+        except grpc.RpcError as e:
+            print("Eroooo")
+        
     def put_new_url(self, url):
         """ Envia novo URL para a fila de URLs (via Gateway) """
-        self.gateway_stub.putNew(index_pb2.PutNewRequest(url=url))
+        try:
+            self.gateway_stub.putNew(index_pb2.PutNewRequest(url=url))
+            return True
+        except grpc.RpcError as e:
+            time.sleep(2)
+            print("Falha na ligação tente novamente")
+            self.get_gateway_stub()
+            return False
 
     def search_words(self, words):
         """ Pesquisa palavras via Gateway """
-        response = self.gateway_stub.searchWord(
-            index_pb2.SearchWordRequest(words=words))
-        return response.urls
+        try:
+            response = self.gateway_stub.searchWord(
+                index_pb2.SearchWordRequest(words=words))
+            return [True, response.urls]
+        except grpc.RpcError as e:
+            time.sleep(2)
+            print("Falha na ligação tente novamente")
+            self.get_gateway_stub()
+            return [False]
+        
 
     def search_backlinks(self, url):
         """ Pesquisa backlinks para um URL via Gateway """
-        response = self.gateway_stub.searchBacklinks(
-            index_pb2.SearchBacklinksRequest(url=url))
-        return response.backlinks
+        try:
+            response = self.gateway_stub.searchBacklinks(
+                index_pb2.SearchBacklinksRequest(url=url))
+            return [True, response.backlinks]
+        except grpc.RpcError as e:
+            time.sleep(2)
+            print("Falha na ligação tente novamente")
+            self.get_gateway_stub()
+            return [False]
+        
 
     def formatStats(self, data):
         """ Formata as stats para envio por websocket """
@@ -68,12 +86,19 @@ class WebSever(index_pb2_grpc.IndexServicer):
 
     def start_sending_statistics(self):
         """ Faz uma chamada RPC para a Gateway iniciar o envio de estatísticas """
-        response = self.gateway_stub.startSendingStatistics(
-            index_pb2.WebServerInfo(host=self.host, port=self.port))
+        while True:
+            try:
+                self.get_gateway_stub()
+                response = self.gateway_stub.startSendingStatistics(
+                    index_pb2.WebServerInfo(host=self.host, port=self.port))
 
-        json_data = self.formatStats(response)
+                json_data = self.formatStats(response)
 
-        asyncio.run(broadcast_message(json_data))
+                asyncio.run(broadcast_message(json_data))
+                break
+            except grpc.RpcError as e:
+                print("Falha ao contactar gateway! Tentando novamente")
+                time.sleep(2)
 
     def SendStats(self, request, context):
         """ Função para estatisticas em tempo real através de websocket """

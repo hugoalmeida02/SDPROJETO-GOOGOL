@@ -1,6 +1,6 @@
-from .webserver import WebSever
+from .webserver import WebServer
 
-_webserver = WebSever
+_webserver = WebServer
 
 def set_webserver(webserver):
     global _webserver
