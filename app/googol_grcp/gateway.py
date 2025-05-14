@@ -27,6 +27,7 @@ class GatewayServicer(index_pb2_grpc.IndexServicer):
         self.load_data()
         self.lock = threading.Lock()
         self.send_statistics = True
+        self.web_server = ""
         
         threading.Thread(target=self.auto_save, daemon=True).start() # Thread para guarda a data periodicamente
         threading.Thread(target=self.check_index_servers, daemon=True).start() # Thread para manter a informacao sobre os barrels ativos
